@@ -1,0 +1,2 @@
+;; Generated package description from org-gnosis.el  -*- no-byte-compile: t -*-
+(define-package "org-gnosis" "0.0.2.0.20250211.203914" "Roam-like Knowledge Management System" '((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2")) :commit "f949378ce7325fe41da23c3b028a531f7a455413" :authors '(("Thanos Apollo" . "public@thanosapollo.org")) :maintainer '("Thanos Apollo" . "public@thanosapollo.org") :keywords '("extensions") :url "https://thanosapollo.org/projects/org-gnosis/")
