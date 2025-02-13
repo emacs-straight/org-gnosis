@@ -5,7 +5,7 @@
 ;; Author: Thanos Apollo <public@thanosapollo.org>
 ;; Keywords: extensions
 ;; URL: https://thanosapollo.org/projects/org-gnosis/
-;; Version: 0.0.2
+;; Version: 0.0.4
 
 ;; Package-Requires: ((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2"))
 
@@ -67,6 +67,10 @@
   "Timestring used for the creation of file."
   :type 'string)
 
+(defcustom org-gnosis-create-as-gpg nil
+  "When non-nil, create notes with a .gpg suffix."
+  :type 'boolean)
+
 (defcustom org-gnosis-todo-files org-agenda-files
   "TODO files used for the journal entries."
   :type '(repeat string))
@@ -94,7 +98,7 @@
   "Select VALUE from TABLE, optionally with RESTRICTIONS.
 
 Optional argument FLATTEN, when non-nil, flattens the result."
-  (org-gnosis-db-init-if-needed)
+  (org-gnosis-db-init-if-needed) ;; Init database if needed
   (let ((output (emacsql org-gnosis-db
 			 `[:select ,value :from ,table :where ,restrictions])))
     (if flatten
@@ -116,7 +120,7 @@ Optional argument FLATTEN, when non-nil, flattens the result."
 (defun org-gnosis-adjust-title (input &optional node-id)
   "Adjust the INPUT string to replace id link structures with plain text.
 
-If node TITLE contains an id link, it's inserted as link for NODE-ID
+If node title contains an id link, it's inserted as link for NODE-ID
 in the database."
   (when (stringp input)
     (let* ((id-links '())
@@ -194,7 +198,7 @@ TOPIC-ID: Topic hash id."
 	 (tags (org-gnosis-get-filetags)))
     (list title tags id)))
 
-;; This one is used mostly for topic
+;; This one is used for topics
 (defun org-gnosis-get-filetags (&optional parsed-data)
   "Return the filetags of the buffer's PARSED-DATA as a comma-separated string."
   (let* ((parsed-data (or parsed-data (org-element-parse-buffer)))
@@ -341,7 +345,8 @@ TIMESTRING defaults to `org-gnosis-timestring'"
   (let ((timestring (or timestring org-gnosis-timestring))
 	(filename (replace-regexp-in-string "#" ""
 					    (replace-regexp-in-string " " "_" title))))
-    (format "%s--%s.org" (format-time-string timestring) filename)))
+    (format "%s--%s.org%s" (format-time-string timestring) filename
+	    (if org-gnosis-create-as-gpg ".gpg" ""))))
 
 (defun org-gnosis--create-file (title &optional directory extras)
   "Create a node FILE for TITLE.
@@ -460,29 +465,34 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
 	  (t (org-insert-link nil id node)))))
 
 
-(defun org-gnosis-insert-tag (&optional tag)
+(defun org-gnosis-insert-filetag (&optional tag)
   "Insert TAG as filetag."
   (interactive)
   (let* ((filetags (org-gnosis-select 'tag 'tags '1=1 t))
          (tag (or tag (funcall org-gnosis-completing-read-func "Select tag: " filetags))))
     (save-excursion
-      (goto-char (point-min))
-      (if (re-search-forward "^#\\+FILETAGS:" nil t)
+      (if (org-at-heading-p)
+	  (org-set-tags tag)
+	(goto-char (point-min))
+	(if (re-search-forward "^#\\+FILETAGS:" nil t)
+            (progn
+              (end-of-line)
+              (insert (if (looking-back ":" nil) "" ":") tag ":"))
           (progn
-            (end-of-line)
-            (insert (if (looking-back ":" nil) "" ":") tag ":"))
-        (progn
-          (insert "#+FILETAGS: :" tag ":")
-          (newline))))))
+            (insert "#+FILETAGS: :" tag ":")
+            (newline)))))))
 
 ;;;###autoload
 (defun org-gnosis-insert-tags (tags)
   "Insert TAGS as filetags."
-  (interactive (list (completing-read-multiple
-		      "Select tags (seperated by ,): "
-		      (org-gnosis-select 'tag 'tags '1=1 t))))
-  (dolist (tag tags)
-    (org-gnosis-insert-tag tag)))
+  (interactive
+   (list (completing-read-multiple
+	  "Select tags (separated by ,): "
+	  (org-gnosis-select 'tag 'tags '1=1 t))))
+  (if (org-before-first-heading-p)
+      (mapc #'org-gnosis-insert-filetag tags)
+    (org-back-to-heading)
+    (org-set-tags tags)))
 
 ;;;###autoload
 (defun org-gnosis-journal-find (&optional title)
@@ -694,32 +704,34 @@ ENTRY: Journal entry linked under the heading."
 
 (defun org-gnosis-db-sync--journal ()
   "Sync journal entries in databse."
-  (cl-loop for file in (cl-remove-if-not (lambda (file)
-					   (and
-					    (string-match-p "^[0-9]"
-							    (file-name-nondirectory file))
-						(not (file-directory-p file))))
-					 (directory-files org-gnosis-journal-dir t nil t))
+  (cl-loop for file in (cl-remove-if-not
+			(lambda (file)
+			  (and
+			   (string-match-p "^[0-9]"
+					   (file-name-nondirectory file))
+			   (not (file-directory-p file))))
+			(directory-files org-gnosis-journal-dir t nil t))
 	   do (org-gnosis-update-file file)))
 
 ;;;###autoload
 (defun org-gnosis-db-sync ()
-  "Sync `org-gnosis-db'.
-
-If called with ARG do not initialize the database."
+  "Sync `org-gnosis-db'."
   (interactive)
   (org-gnosis-db-init)
-  (let ((files (cl-remove-if-not (lambda (file)
-				   (and (string-match-p "^[0-9]"
-							(file-name-nondirectory file))
-					(not (file-directory-p file))))
-				 (directory-files org-gnosis-dir t nil t))))
+  (let ((files (cl-remove-if-not
+		(lambda (file)
+		  (and (string-match-p "^[0-9]"
+				       (file-name-nondirectory file))
+		       (not (file-directory-p file))))
+		(directory-files org-gnosis-dir t nil t))))
     (cl-loop for file in files
 	     do (org-gnosis-update-file file)))
   (org-gnosis-db-sync--journal))
 
 (defun org-gnosis-db-init ()
-  "Initialize database DB with the correct schema and user version."
+  "Initialize database.
+
+If database tables exist, delete them & recreate the db."
   (setf org-gnosis-db (emacsql-sqlite-open (locate-user-emacs-file "org-gnosis.db")))
   (org-gnosis-db-delete-tables)
   (when (length< (emacsql org-gnosis-db
