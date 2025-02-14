@@ -1,2 +1,2 @@
-;; Generated package description from org-gnosis.el  -*- no-byte-compile: t -*-
-(define-package "org-gnosis" "0.0.4.0.20250212.213717" "Roam-like Knowledge Management System" '((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2")) :commit "59cc5917ab2b1ce473e23f63db98a50b5d70404a" :authors '(("Thanos Apollo" . "public@thanosapollo.org")) :maintainer '("Thanos Apollo" . "public@thanosapollo.org") :keywords '("extensions") :url "https://thanosapollo.org/projects/org-gnosis/")
+;; Generated package description from org-gnosis.el  -*- mode: lisp-data; no-byte-compile: t -*-
+(define-package "org-gnosis" "0.0.5.0.20250213.192936" "Roam-like Knowledge Management System" '((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2")) :commit "80501ed9aa31091fcd74818bb24acb62e57d0c22" :authors '(("Thanos Apollo" . "public@thanosapollo.org")) :maintainer '("Thanos Apollo" . "public@thanosapollo.org") :keywords '("extensions") :url "https://thanosapollo.org/projects/org-gnosis/")

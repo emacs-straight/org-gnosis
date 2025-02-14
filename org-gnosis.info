@@ -1,4 +1,4 @@
-This is docREXRB4.info, produced by makeinfo version 6.8 from
+This is docvicgXo.info, produced by makeinfo version 6.8 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -20,7 +20,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: docREXRB4.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
+File: docvicgXo.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
 
 Org Gnosis User Manual
 **********************
@@ -78,7 +78,7 @@ Contributing
 
 
 
-File: docREXRB4.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
+File: docvicgXo.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
 
 1 Installation & Configuration
 ******************************
@@ -138,10 +138,29 @@ File: docREXRB4.info,  Node: Installation & Configuration,  Next: Taking Notes W
             ("C-c i" . org-id-get-create)))
 
 
-File: docREXRB4.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing,  Prev: Installation & Configuration,  Up: Top
+File: docvicgXo.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing,  Prev: Installation & Configuration,  Up: Top
 
 2 Taking Notes With Org Gnosis
 ******************************
+
+For Org Gnosis there are 2 types of notes,
+
+   • Your “permanent” notes, which you can visit & and create using ‘M-x
+     org-gnosis-find’
+
+   • Your journal notes, which you can visit & create using ‘M-x
+     org-gnosis-journal-find’, which optionally can serve as “fleeting”
+     notes.
+
+   As mentioned before, opening & searching your notes should be done
+using ‘M-x org-gnosis-find’ as this will enable ‘org-gnosis-mode’.
+
+   If ‘org-gnosis-mode’ is not enabled, files will not be parsed and
+saved in the database when you run ‘save-buffer’.
+
+   Org Gnosis does not automatically sync the database.  To delete a
+file, use ‘org-gnosis-delete-file’ or run ‘org-gnosis-db-sync’ after
+manual deletion.
 
 * Menu:
 
@@ -149,7 +168,7 @@ File: docREXRB4.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing, 
 * Importing Notes::
 
 
-File: docREXRB4.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
+File: docvicgXo.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
 
 2.1 Organizing your notes
 =========================
@@ -178,43 +197,45 @@ For example, you might create an MOC like this for a class on
      :PROPERTIES:
      :ID:       15edada1-9815-4fb3-9b8f-7da08107bdb2
      :END:
-     #+title: Biopolymers
+     #+title: Biopolymers Syllabus
      #+filetags: :moc:
 
-     * [[id:<node-id>][Proteins]]
-     + [[id:<node-id>][Protein Structure Levels]]
-     + [[id:<node-id>][Protein Domains]]
-     + [[id:<node-id>][Protein MOTIF]]
-     + [[id:<node-id>][Difference between a motif and a domain in a protein]]
-     + [[id:<node-id>][Protein Families]]
+     * Proteins
+     - Protein Structure Levels
+     - Protein Domains
+     - Protein MOTIF
+     - Difference between a motif and a domain in a protein
+     - Protein Families
 
-     * [[id:<node-id>][Nucleic acids]]
-     + [[id:<node-id>][DNA]]
-     + [[id:<node-id>][RNA]]
-     + [[id:<node-id>][Recognition and self-assembly of macromolecules]]
-     + [[id:<node-id>][Cytoskeleton]]
+     * Nucleic acids
+     - DNA
+     - RNA
+     - Recognition and self-assembly of macromolecules
+     - Cytoskeleton
 
+   Note: Items with ‘-’ would be links.  The headings in the above
+example could be links to an MOC as well.
 
    This way your notes are atomic & can be reused used in future
 classes/projects.
 
-   For example you’d reuse your notes on nucleic acids in a genetics
-class MOC for your next semester.
+   • For example you’d reuse your notes on nucleic acids in a genetics
+     class MOC for your next semester.
 
 
-File: docREXRB4.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
+File: docvicgXo.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
 
 2.2 Importing Notes
 ===================
 
 If you are a previous user of packages that use ‘org-mode’ and org ids,
-your current note collection should be able to work with org-gnosis
+your current note collection should be able to work with ‘org-gnosis’
 without you having to change anything.
 
    To sync your note collection use ‘M-x org-gnosis-db-sync’
 
 
-File: docREXRB4.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
+File: docvicgXo.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
 
 3 Contributing
 **************
@@ -225,7 +246,7 @@ File: docREXRB4.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis, 
 * Patches Require Copyright Assignment To The FSF::
 
 
-File: docREXRB4.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
+File: docvicgXo.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
 
 3.1 Sources
 ===========
@@ -235,7 +256,7 @@ File: docREXRB4.info,  Node: Sources,  Next: Patches Require Copyright Assignmen
         • <https://codeberg.org/thanosapollo/emacs-org-gnosis>
 
 
-File: docREXRB4.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
+File: docvicgXo.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
 
 3.2 Patches Require Copyright Assignment To The FSF
 ===================================================
@@ -266,14 +287,11 @@ completed only once, allowing you to contribute to GNU Emacs.
 
      [What is the name of the program or package you're contributing to?]
 
-     GNU Emacs
+     Emacs
 
      [Did you copy any files or text written by someone else in these changes?
      Even if that material is free software, we need to know about it.]
 
-     Copied a few snippets from the same files I edited.  Their author,
-     Protesilaos Stavrou, has already assigned copyright to the Free Software
-     Foundation.
 
      [Do you have an employer who might have a basis to claim to own
      your changes?  Do you attend a school which might make such a claim?]
@@ -291,9 +309,6 @@ completed only once, allowing you to contribute to GNU Emacs.
      [Please write your postal address here.]
 
 
-
-
-
      [Which files have you changed so far, and which new files have you written
      so far?]
 
@@ -304,11 +319,11 @@ Tag Table:
 Node: Top849
 Node: Installation & Configuration2784
 Node: Taking Notes With Org Gnosis5302
-Node: Organizing your notes5550
-Node: Importing Notes7507
-Node: Contributing7911
-Node: Sources8108
-Node: Patches Require Copyright Assignment To The FSF8397
+Node: Organizing your notes6298
+Node: Importing Notes8188
+Node: Contributing8598
+Node: Sources8795
+Node: Patches Require Copyright Assignment To The FSF9084
 
 End Tag Table
 
