@@ -1,4 +1,4 @@
-This is docvd9BtM.info, produced by makeinfo version 6.8 from
+This is dociinjgH.info, produced by makeinfo version 6.8 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -20,7 +20,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: docvd9BtM.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
+File: dociinjgH.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
 
 Org Gnosis User Manual
 **********************
@@ -78,7 +78,7 @@ Contributing
 
 
 
-File: docvd9BtM.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
+File: dociinjgH.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
 
 1 Installation & Configuration
 ******************************
@@ -138,7 +138,7 @@ File: docvd9BtM.info,  Node: Installation & Configuration,  Next: Taking Notes W
             ("C-c i" . org-id-get-create)))
 
 
-File: docvd9BtM.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing,  Prev: Installation & Configuration,  Up: Top
+File: dociinjgH.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing,  Prev: Installation & Configuration,  Up: Top
 
 2 Taking Notes With Org Gnosis
 ******************************
@@ -168,7 +168,7 @@ manual deletion.
 * Importing Notes::
 
 
-File: docvd9BtM.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
+File: dociinjgH.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
 
 2.1 Organizing your notes
 =========================
@@ -216,14 +216,14 @@ For example, you might create an MOC like this for a class on
    Note: Items with ‘-’ would be links.  The headings in the above
 example could be links to an MOC as well.
 
-   This way your notes are atomic & can be reused used in future
+   This way your notes are atomic & can be reused in future
 classes/projects.
 
    • For example you’d reuse your notes on nucleic acids in a genetics
      class MOC for your next semester.
 
 
-File: docvd9BtM.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
+File: dociinjgH.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
 
 2.2 Importing Notes
 ===================
@@ -235,7 +235,7 @@ without you having to change anything.
    To sync your note collection use ‘M-x org-gnosis-db-sync’
 
 
-File: docvd9BtM.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
+File: dociinjgH.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
 
 3 Contributing
 **************
@@ -246,7 +246,7 @@ File: docvd9BtM.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis, 
 * Patches Require Copyright Assignment To The FSF::
 
 
-File: docvd9BtM.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
+File: dociinjgH.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
 
 3.1 Sources
 ===========
@@ -256,7 +256,7 @@ File: docvd9BtM.info,  Node: Sources,  Next: Patches Require Copyright Assignmen
         • <https://codeberg.org/thanosapollo/emacs-org-gnosis>
 
 
-File: docvd9BtM.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
+File: dociinjgH.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
 
 3.2 Patches Require Copyright Assignment To The FSF
 ===================================================
@@ -324,10 +324,10 @@ Node: Top849
 Node: Installation & Configuration2784
 Node: Taking Notes With Org Gnosis5302
 Node: Organizing your notes6298
-Node: Importing Notes8188
-Node: Contributing8598
-Node: Sources8795
-Node: Patches Require Copyright Assignment To The FSF9084
+Node: Importing Notes8183
+Node: Contributing8593
+Node: Sources8790
+Node: Patches Require Copyright Assignment To The FSF9079
 
 End Tag Table
 
