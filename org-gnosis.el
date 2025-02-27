@@ -5,7 +5,7 @@
 ;; Author: Thanos Apollo <public@thanosapollo.org>
 ;; Keywords: extensions
 ;; URL: https://thanosapollo.org/projects/org-gnosis/
-;; Version: 0.0.7
+;; Version: 0.0.9
 
 ;; Package-Requires: ((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2"))
 
@@ -94,18 +94,18 @@
   (unless (file-directory-p dir)
     (make-directory dir)))
 
-(cl-defun org-gnosis-select (value table &optional (restrictions '1=1) (flatten nil))
+(defun org-gnosis-select (value table &optional restrictions flatten)
   "Select VALUE from TABLE, optionally with RESTRICTIONS.
 
 Optional argument FLATTEN, when non-nil, flattens the result."
   (org-gnosis-db-init-if-needed) ;; Init database if needed
-  (let ((output (emacsql org-gnosis-db
-			 `[:select ,value :from ,table :where ,restrictions])))
-    (if flatten
-	(apply #'append output)
-      output)))
+  (let* ((restrictions (or restrictions '(= 1 1)))
+	 (flatten (or flatten nil))
+	 (output (emacsql org-gnosis-db
+			  `[:select ,value :from ,table :where ,restrictions])))
+    (if flatten (apply #'append output) output)))
 
-(cl-defun org-gnosis--insert-into (table values)
+(defun org-gnosis--insert-into (table values)
   "Insert VALUES to TABLE."
   (emacsql org-gnosis-db `[:insert :into ,table :values ,values]))
 
@@ -113,7 +113,7 @@ Optional argument FLATTEN, when non-nil, flattens the result."
   "From TABLE use where to delete VALUE."
   (emacsql org-gnosis-db `[:delete :from ,table :where ,value]))
 
-(cl-defun org-gnosis--drop-table (table)
+(defun org-gnosis--drop-table (table)
   "Drop TABLE from `gnosis-db'."
   (emacsql org-gnosis-db `[:drop-table ,table]))
 
@@ -256,7 +256,7 @@ If JOURNAL is non-nil, update file as a journal entry."
 	 (table (if journal 'journal 'nodes))
 	 (filename (file-name-nondirectory file))
 	 (links (and (> (length info) 1) (apply #'append (last info))))
-	 (titles (org-gnosis-select 'title table '1=1 t)))
+	 (titles (org-gnosis-select 'title table nil t)))
     ;; Add gnosis topic
     (message "Parsing: %s" filename)
     (cl-loop for item in data
@@ -420,12 +420,12 @@ DIRECTORY."
   (interactive)
   (let* ((tag (or tag (funcall org-gnosis-completing-read-func
 			       "Select tag: "
-			       (org-gnosis-select 'tag 'tags '1=1 t))))
+			       (org-gnosis-select 'tag 'tags nil t))))
 	 (node
 	  (funcall org-gnosis-completing-read-func
 		   "Select node: "
 		   (org-gnosis-select 'title 'nodes
-				      `(like tags ',(format "%%\"%s\"%%" tag))))))
+				      `(like tags ',(format "%%\"%s\"%%" tag)) t))))
     (org-gnosis-find node)))
 
 (defun org-gnosis-select-template (templates)
@@ -441,16 +441,17 @@ If templates is only item, return it without a prompt."
     (funcall (apply #'append template))))
 
 ;;;###autoload
-(defun org-gnosis-insert (&optional journal-p)
+(defun org-gnosis-insert (arg &optional journal-p)
   "Insert gnosis node.
 
+If called with ARG, prompt for custom link description.
 If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
   (interactive "P")
   (let* ((table (if journal-p 'journal 'nodes))
 	 (node (org-gnosis--find "Select gnosis node: "
-				 (org-gnosis-select '[title tags] table '1=1)
-				 (org-gnosis-select 'title table '1=1)))
-	 (id (concat "id:" (car (org-gnosis-select 'id table `(= ,node title) '1=1)))))
+				 (org-gnosis-select '[title tags] table)
+				 (org-gnosis-select 'title table)))
+	 (id (concat "id:" (car (org-gnosis-select 'id table `(= ,node title) t)))))
     (cond ((< (length id) 4) ; if less that 4 then `org-gnosis-select' returned nil, (id:)
 	   (save-window-excursion
 	     (org-gnosis--create-file
@@ -459,16 +460,16 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
 	     (save-buffer)
 	     (setf id (concat
 		       "id:"
-		       (car (org-gnosis-select 'id table `(= ,node title) '1=1)))))
+		       (car (org-gnosis-select 'id table `(= ,node title) t)))))
 	   (org-insert-link nil id node)
 	   (message "Created new node: %s" node))
-	  (t (org-insert-link nil id node)))))
+	  (t (org-insert-link nil id (if arg (read-string "Description: ") node))))))
 
 
 (defun org-gnosis-insert-filetag (&optional tag)
   "Insert TAG as filetag."
   (interactive)
-  (let* ((filetags (org-gnosis-select 'tag 'tags '1=1 t))
+  (let* ((filetags (org-gnosis-select 'tag 'tags nil t))
          (tag (or tag (funcall org-gnosis-completing-read-func "Select tag: " filetags))))
     (save-excursion
       (if (org-at-heading-p)
@@ -488,7 +489,7 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
   (interactive
    (list (completing-read-multiple
 	  "Select tags (separated by ,): "
-	  (org-gnosis-select 'tag 'tags '1=1 t))))
+	  (org-gnosis-select 'tag 'tags nil t))))
   (let ((id (and (org-gnosis-get-id))))
     (org-id-goto id)
     (if (org-current-level)
@@ -525,10 +526,12 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
        (org-gnosis-select-template org-gnosis-journal-templates)))))
 
 ;;;###autoload
-(defun org-gnosis-journal-insert ()
-  "Insert journal entry."
-  (interactive)
-  (org-gnosis-insert t))
+(defun org-gnosis-journal-insert (arg)
+  "Insert journal entry.
+
+If called with prefix ARG, use custom link description."
+  (interactive "P")
+  (org-gnosis-insert arg t))
 
 ;;;###autoload
 (defun org-gnosis-journal ()
@@ -745,10 +748,9 @@ ENTRY: Journal entry linked under the heading."
   "Initialize database.
 
 If database tables exist, delete them & recreate the db."
-  (setf org-gnosis-db (emacsql-sqlite-open (locate-user-emacs-file "org-gnosis.db")))
   (org-gnosis-db-delete-tables)
   (when (length< (emacsql org-gnosis-db
-			  [:select name :from sqlite-master :where (= type table)])
+			  [:select name :from sqlite-master :where (= type 'table)])
 		 3)
     (emacsql-with-transaction org-gnosis-db
       (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
@@ -758,7 +760,7 @@ If database tables exist, delete them & recreate the db."
 (defun org-gnosis-db-init-if-needed ()
   "Init database if it has not been initizalized."
   (when (length< (emacsql org-gnosis-db
-			  [:select name :from sqlite-master :where (= type table)])
+			  [:select name :from sqlite-master :where (= type 'table)])
 		 4)
     (message "Creating org-gnosis database...")
     (org-gnosis-db-init)))

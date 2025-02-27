@@ -1,4 +1,4 @@
-This is dociinjgH.info, produced by makeinfo version 6.8 from
+This is doctmzgeV.info, produced by makeinfo version 6.8 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -20,7 +20,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: dociinjgH.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
+File: doctmzgeV.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
 
 Org Gnosis User Manual
 **********************
@@ -78,7 +78,7 @@ Contributing
 
 
 
-File: dociinjgH.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
+File: doctmzgeV.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
 
 1 Installation & Configuration
 ******************************
@@ -138,7 +138,7 @@ File: dociinjgH.info,  Node: Installation & Configuration,  Next: Taking Notes W
             ("C-c i" . org-id-get-create)))
 
 
-File: dociinjgH.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing,  Prev: Installation & Configuration,  Up: Top
+File: doctmzgeV.info,  Node: Taking Notes With Org Gnosis,  Next: Contributing,  Prev: Installation & Configuration,  Up: Top
 
 2 Taking Notes With Org Gnosis
 ******************************
@@ -168,7 +168,7 @@ manual deletion.
 * Importing Notes::
 
 
-File: dociinjgH.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
+File: doctmzgeV.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
 
 2.1 Organizing your notes
 =========================
@@ -223,7 +223,7 @@ classes/projects.
      class MOC for your next semester.
 
 
-File: dociinjgH.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
+File: doctmzgeV.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
 
 2.2 Importing Notes
 ===================
@@ -235,7 +235,7 @@ without you having to change anything.
    To sync your note collection use ‘M-x org-gnosis-db-sync’
 
 
-File: dociinjgH.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
+File: doctmzgeV.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
 
 3 Contributing
 **************
@@ -246,7 +246,7 @@ File: dociinjgH.info,  Node: Contributing,  Prev: Taking Notes With Org Gnosis, 
 * Patches Require Copyright Assignment To The FSF::
 
 
-File: dociinjgH.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
+File: doctmzgeV.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
 
 3.1 Sources
 ===========
@@ -256,7 +256,7 @@ File: dociinjgH.info,  Node: Sources,  Next: Patches Require Copyright Assignmen
         • <https://codeberg.org/thanosapollo/emacs-org-gnosis>
 
 
-File: dociinjgH.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
+File: doctmzgeV.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
 
 3.2 Patches Require Copyright Assignment To The FSF
 ===================================================
