@@ -1,4 +1,4 @@
-This is doc1CnDQj.info, produced by makeinfo version 6.8 from
+This is org-gnosis.info, produced by .texi2any-real version 7.1.1 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -20,7 +20,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: doc1CnDQj.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
+File: org-gnosis.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
 
 Org Gnosis User Manual
 **********************
@@ -65,7 +65,7 @@ This can serve as an additional space for temporary notes.
 * Configuration::
 * Contributing::
 
-— The Detailed Node Listing —
+-- The Detailed Node Listing --
 
 Taking Notes With Org Gnosis
 
@@ -88,7 +88,7 @@ Contributing
 
 
 
-File: doc1CnDQj.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
+File: org-gnosis.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
 
 1 Installation & Configuration
 ******************************
@@ -112,27 +112,27 @@ File: doc1CnDQj.info,  Node: Installation & Configuration,  Next: Taking Notes W
        :config
        (defun example/org-gnosis-book-template ()
          (let ((date (format-time-string "%Y-%m-%d"))
-             (book-title (completing-read
-                        "Example book: "
-                        '("Free Software, Free Society" "How to Take Smart Notes"))))
+               (book-title (completing-read
+                          "Example book: "
+                          '("Free Software, Free Society" "How to Take Smart Notes"))))
            (format "#+DATE: %s \n#+BOOK_TITLE: %s\n\n* Main Idea\n* Key Points\n* Own Thoughts"
-                 date book-title)))
+                   date book-title)))
 
        (add-to-list 'org-gnosis-node-templates
-                  '("Book Example" example/org-gnosis-book-template))
+                    '("Book Example" example/org-gnosis-book-template))
        :bind (("C-c n" . thanos/notes-map)
-            ("C-c n j" . thanos/journal-map)
-            :map thanos/notes-map
-            ("f" . org-gnosis-find)
-            ("i" . org-gnosis-insert)
-            ("t" . org-gnosis-find-by-tag)
-            :map thanos/journal-map
-            ("j" . org-gnosis-journal)
-            ("f" . org-gnosis-journal-find)
-            ("i" . org-gnosis-journal-insert)
-            :map org-gnosis-mode-map
-            ("C-c C-." . org-gnosis-insert-tag)
-            ("C-c i" . org-id-get-create))
+              ("C-c n j" . thanos/journal-map)
+              :map thanos/notes-map
+              ("f" . org-gnosis-find)
+              ("i" . org-gnosis-insert)
+              ("t" . org-gnosis-find-by-tag)
+              :map thanos/journal-map
+              ("j" . org-gnosis-journal)
+              ("f" . org-gnosis-journal-find)
+              ("i" . org-gnosis-journal-insert)
+              :map org-gnosis-mode-map
+              ("C-c C-." . org-gnosis-insert-tag)
+              ("C-c i" . org-id-get-create))
        :custom
        (org-gnosis-dir "~/Notes")
        ;; Whe non-nil, create notes as gpg encrypted files, see epa config
@@ -149,18 +149,18 @@ File: doc1CnDQj.info,  Node: Installation & Configuration,  Next: Taking Notes W
    • See *note Encryption:: for recommended settings when using ‘gpg’
 
 
-File: doc1CnDQj.info,  Node: Taking Notes With Org Gnosis,  Next: Configuration,  Prev: Installation & Configuration,  Up: Top
+File: org-gnosis.info,  Node: Taking Notes With Org Gnosis,  Next: Configuration,  Prev: Installation & Configuration,  Up: Top
 
 2 Taking Notes With Org Gnosis
 ******************************
 
 For Org Gnosis there are 2 types of notes,
 
-   • Your “permanent” notes, which you can visit & and create using ‘M-x
+   • Your "permanent" notes, which you can visit & and create using ‘M-x
      org-gnosis-find’
 
    • Your journal notes, which you can visit & create using ‘M-x
-     org-gnosis-journal-find’, which optionally can serve as “fleeting”
+     org-gnosis-journal-find’, which optionally can serve as "fleeting"
      notes.
 
    As mentioned before, opening & searching your notes should be done
@@ -179,7 +179,7 @@ manual deletion.
 * Importing Notes::
 
 
-File: doc1CnDQj.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
+File: org-gnosis.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
 
 2.1 Organizing your notes
 =========================
@@ -230,11 +230,11 @@ example could be links to an MOC as well.
    This way your notes are atomic & can be reused in future
 classes/projects.
 
-   • For example you’d reuse your notes on nucleic acids in a genetics
+   • For example you'd reuse your notes on nucleic acids in a genetics
      class MOC for your next semester.
 
 
-File: doc1CnDQj.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
+File: org-gnosis.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
 
 2.2 Importing Notes
 ===================
@@ -246,7 +246,7 @@ without you having to change anything.
    To sync your note collection use ‘M-x org-gnosis-db-sync’
 
 
-File: doc1CnDQj.info,  Node: Configuration,  Next: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
+File: org-gnosis.info,  Node: Configuration,  Next: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
 
 3 Configuration
 ***************
@@ -257,7 +257,7 @@ File: doc1CnDQj.info,  Node: Configuration,  Next: Contributing,  Prev: Taking N
 * Encryption::
 
 
-File: doc1CnDQj.info,  Node: Completions,  Next: Encryption,  Up: Configuration
+File: org-gnosis.info,  Node: Completions,  Next: Encryption,  Up: Configuration
 
 3.1 Completions
 ===============
@@ -270,7 +270,7 @@ To customize completions of ‘org-gnosis’, you can adjust the value
 * Diacritic Insensitive completions::
 
 
-File: doc1CnDQj.info,  Node: Diacritic Insensitive completions,  Up: Completions
+File: org-gnosis.info,  Node: Diacritic Insensitive completions,  Up: Completions
 
 3.1.1 Diacritic Insensitive completions
 ---------------------------------------
@@ -302,20 +302,20 @@ something like this:
                        m))
                 (completion-table
                  (lambda (string pred action)
-                 (if (eq action 'metadata)
+                   (if (eq action 'metadata)
                        '(metadata (category . diacritic-completion))
-                   (complete-with-action
-                    action stripped-alist
-                    (my/strip-diacritics string) pred))))
+                     (complete-with-action
+                      action stripped-alist
+                      (my/strip-diacritics string) pred))))
                 (result (minibuffer-with-setup-hook
-                          (lambda () (use-local-map map))
+                            (lambda () (use-local-map map))
                           (completing-read prompt completion-table))))
            (or (cdr (assoc result stripped-alist)) result)))
        :custom
        (org-gnosis-completing-read-func #'my/completing-read))
 
 
-File: doc1CnDQj.info,  Node: Encryption,  Prev: Completions,  Up: Configuration
+File: org-gnosis.info,  Node: Encryption,  Prev: Completions,  Up: Configuration
 
 3.2 Encryption
 ==============
@@ -331,13 +331,13 @@ files encrypted, such as setting a default key to encrypt your files.
        :defer t
        :config
        (setf epa-keys-select-method 'minibuffer
-           epa-file-encrypt-to '("62B758D0F6719938BC09CECA339F736C3A720928")
-           ;; Do not prompt for key selection, we are only using the above key.
-           epa-file-select-keys 'silent))
+             epa-file-encrypt-to '("62B758D0F6719938BC09CECA339F736C3A720928")
+             ;; Do not prompt for key selection, we are only using the above key.
+             epa-file-select-keys 'silent))
 
 
 
-File: doc1CnDQj.info,  Node: Contributing,  Prev: Configuration,  Up: Top
+File: org-gnosis.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 
 4 Contributing
 **************
@@ -348,7 +348,7 @@ File: doc1CnDQj.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 * Patches Require Copyright Assignment To The FSF::
 
 
-File: doc1CnDQj.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
+File: org-gnosis.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
 
 4.1 Sources
 ===========
@@ -358,7 +358,7 @@ File: doc1CnDQj.info,  Node: Sources,  Next: Patches Require Copyright Assignmen
         • <https://codeberg.org/thanosapollo/emacs-org-gnosis>
 
 
-File: doc1CnDQj.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
+File: org-gnosis.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
 
 4.2 Patches Require Copyright Assignment To The FSF
 ===================================================
@@ -422,18 +422,18 @@ completed only once, allowing you to contribute to GNU Emacs.
 
 
 Tag Table:
-Node: Top849
-Node: Installation & Configuration2901
-Node: Taking Notes With Org Gnosis5431
-Node: Organizing your notes6428
-Node: Importing Notes8313
-Node: Configuration8723
-Node: Completions8911
-Node: Diacritic Insensitive completions9186
-Node: Encryption11072
-Node: Contributing11731
-Node: Sources11913
-Node: Patches Require Copyright Assignment To The FSF12202
+Node: Top858
+Node: Installation & Configuration2909
+Node: Taking Notes With Org Gnosis5474
+Node: Organizing your notes6464
+Node: Importing Notes8348
+Node: Configuration8759
+Node: Completions8948
+Node: Diacritic Insensitive completions9224
+Node: Encryption11121
+Node: Contributing11787
+Node: Sources11970
+Node: Patches Require Copyright Assignment To The FSF12260
 
 End Tag Table
 
