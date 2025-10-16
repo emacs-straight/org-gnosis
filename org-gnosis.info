@@ -1,4 +1,4 @@
-This is doc1CnDQj.info, produced by makeinfo version 6.8 from
+This is docWRH4HJ.info, produced by makeinfo version 6.8 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -20,7 +20,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: doc1CnDQj.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
+File: docWRH4HJ.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
 
 Org Gnosis User Manual
 **********************
@@ -88,7 +88,7 @@ Contributing
 
 
 
-File: doc1CnDQj.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
+File: docWRH4HJ.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
 
 1 Installation & Configuration
 ******************************
@@ -149,7 +149,7 @@ File: doc1CnDQj.info,  Node: Installation & Configuration,  Next: Taking Notes W
    • See *note Encryption:: for recommended settings when using ‘gpg’
 
 
-File: doc1CnDQj.info,  Node: Taking Notes With Org Gnosis,  Next: Configuration,  Prev: Installation & Configuration,  Up: Top
+File: docWRH4HJ.info,  Node: Taking Notes With Org Gnosis,  Next: Configuration,  Prev: Installation & Configuration,  Up: Top
 
 2 Taking Notes With Org Gnosis
 ******************************
@@ -179,7 +179,7 @@ manual deletion.
 * Importing Notes::
 
 
-File: doc1CnDQj.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
+File: docWRH4HJ.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
 
 2.1 Organizing your notes
 =========================
@@ -234,7 +234,7 @@ classes/projects.
      class MOC for your next semester.
 
 
-File: doc1CnDQj.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
+File: docWRH4HJ.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
 
 2.2 Importing Notes
 ===================
@@ -246,7 +246,7 @@ without you having to change anything.
    To sync your note collection use ‘M-x org-gnosis-db-sync’
 
 
-File: doc1CnDQj.info,  Node: Configuration,  Next: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
+File: docWRH4HJ.info,  Node: Configuration,  Next: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
 
 3 Configuration
 ***************
@@ -257,7 +257,7 @@ File: doc1CnDQj.info,  Node: Configuration,  Next: Contributing,  Prev: Taking N
 * Encryption::
 
 
-File: doc1CnDQj.info,  Node: Completions,  Next: Encryption,  Up: Configuration
+File: docWRH4HJ.info,  Node: Completions,  Next: Encryption,  Up: Configuration
 
 3.1 Completions
 ===============
@@ -270,7 +270,7 @@ To customize completions of ‘org-gnosis’, you can adjust the value
 * Diacritic Insensitive completions::
 
 
-File: doc1CnDQj.info,  Node: Diacritic Insensitive completions,  Up: Completions
+File: docWRH4HJ.info,  Node: Diacritic Insensitive completions,  Up: Completions
 
 3.1.1 Diacritic Insensitive completions
 ---------------------------------------
@@ -315,7 +315,7 @@ something like this:
        (org-gnosis-completing-read-func #'my/completing-read))
 
 
-File: doc1CnDQj.info,  Node: Encryption,  Prev: Completions,  Up: Configuration
+File: docWRH4HJ.info,  Node: Encryption,  Prev: Completions,  Up: Configuration
 
 3.2 Encryption
 ==============
@@ -337,7 +337,7 @@ files encrypted, such as setting a default key to encrypt your files.
 
 
 
-File: doc1CnDQj.info,  Node: Contributing,  Prev: Configuration,  Up: Top
+File: docWRH4HJ.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 
 4 Contributing
 **************
@@ -348,7 +348,7 @@ File: doc1CnDQj.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 * Patches Require Copyright Assignment To The FSF::
 
 
-File: doc1CnDQj.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
+File: docWRH4HJ.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
 
 4.1 Sources
 ===========
@@ -358,7 +358,7 @@ File: doc1CnDQj.info,  Node: Sources,  Next: Patches Require Copyright Assignmen
         • <https://codeberg.org/thanosapollo/emacs-org-gnosis>
 
 
-File: doc1CnDQj.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
+File: docWRH4HJ.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
 
 4.2 Patches Require Copyright Assignment To The FSF
 ===================================================
