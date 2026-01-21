@@ -1,4 +1,4 @@
-This is doc8hoYYi.info, produced by makeinfo version 7.1.1 from
+This is org-gnosis.info, produced by makeinfo version 7.1.1 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -20,7 +20,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: doc8hoYYi.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
+File: org-gnosis.info,  Node: Top,  Next: Installation & Configuration,  Up: (dir)
 
 Org Gnosis User Manual
 **********************
@@ -88,7 +88,7 @@ Contributing
 
 
 
-File: doc8hoYYi.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
+File: org-gnosis.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
 
 1 Installation & Configuration
 ******************************
@@ -149,7 +149,7 @@ File: doc8hoYYi.info,  Node: Installation & Configuration,  Next: Taking Notes W
    • See *note Encryption:: for recommended settings when using ‘gpg’
 
 
-File: doc8hoYYi.info,  Node: Taking Notes With Org Gnosis,  Next: Configuration,  Prev: Installation & Configuration,  Up: Top
+File: org-gnosis.info,  Node: Taking Notes With Org Gnosis,  Next: Configuration,  Prev: Installation & Configuration,  Up: Top
 
 2 Taking Notes With Org Gnosis
 ******************************
@@ -179,7 +179,7 @@ manual deletion.
 * Importing Notes::
 
 
-File: doc8hoYYi.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
+File: org-gnosis.info,  Node: Organizing your notes,  Next: Importing Notes,  Up: Taking Notes With Org Gnosis
 
 2.1 Organizing your notes
 =========================
@@ -234,7 +234,7 @@ classes/projects.
      class MOC for your next semester.
 
 
-File: doc8hoYYi.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
+File: org-gnosis.info,  Node: Importing Notes,  Prev: Organizing your notes,  Up: Taking Notes With Org Gnosis
 
 2.2 Importing Notes
 ===================
@@ -246,7 +246,7 @@ without you having to change anything.
    To sync your note collection use ‘M-x org-gnosis-db-sync’
 
 
-File: doc8hoYYi.info,  Node: Configuration,  Next: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
+File: org-gnosis.info,  Node: Configuration,  Next: Contributing,  Prev: Taking Notes With Org Gnosis,  Up: Top
 
 3 Configuration
 ***************
@@ -257,7 +257,7 @@ File: doc8hoYYi.info,  Node: Configuration,  Next: Contributing,  Prev: Taking N
 * Encryption::
 
 
-File: doc8hoYYi.info,  Node: Completions,  Next: Encryption,  Up: Configuration
+File: org-gnosis.info,  Node: Completions,  Next: Encryption,  Up: Configuration
 
 3.1 Completions
 ===============
@@ -270,7 +270,7 @@ To customize completions of ‘org-gnosis’, you can adjust the value
 * Diacritic Insensitive completions::
 
 
-File: doc8hoYYi.info,  Node: Diacritic Insensitive completions,  Up: Completions
+File: org-gnosis.info,  Node: Diacritic Insensitive completions,  Up: Completions
 
 3.1.1 Diacritic Insensitive completions
 ---------------------------------------
@@ -315,7 +315,7 @@ something like this:
        (org-gnosis-completing-read-func #'my/completing-read))
 
 
-File: doc8hoYYi.info,  Node: Encryption,  Prev: Completions,  Up: Configuration
+File: org-gnosis.info,  Node: Encryption,  Prev: Completions,  Up: Configuration
 
 3.2 Encryption
 ==============
@@ -337,7 +337,7 @@ files encrypted, such as setting a default key to encrypt your files.
 
 
 
-File: doc8hoYYi.info,  Node: Contributing,  Prev: Configuration,  Up: Top
+File: org-gnosis.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 
 4 Contributing
 **************
@@ -348,7 +348,7 @@ File: doc8hoYYi.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 * Patches Require Copyright Assignment To The FSF::
 
 
-File: doc8hoYYi.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
+File: org-gnosis.info,  Node: Sources,  Next: Patches Require Copyright Assignment To The FSF,  Up: Contributing
 
 4.1 Sources
 ===========
@@ -358,7 +358,7 @@ File: doc8hoYYi.info,  Node: Sources,  Next: Patches Require Copyright Assignmen
         • <https://codeberg.org/thanosapollo/emacs-org-gnosis>
 
 
-File: doc8hoYYi.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
+File: org-gnosis.info,  Node: Patches Require Copyright Assignment To The FSF,  Prev: Sources,  Up: Contributing
 
 4.2 Patches Require Copyright Assignment To The FSF
 ===================================================
@@ -422,18 +422,18 @@ completed only once, allowing you to contribute to GNU Emacs.
 
 
 Tag Table:
-Node: Top851
-Node: Installation & Configuration2901
-Node: Taking Notes With Org Gnosis5465
-Node: Organizing your notes6454
-Node: Importing Notes8337
-Node: Configuration8747
-Node: Completions8935
-Node: Diacritic Insensitive completions9210
-Node: Encryption11106
-Node: Contributing11771
-Node: Sources11953
-Node: Patches Require Copyright Assignment To The FSF12242
+Node: Top852
+Node: Installation & Configuration2903
+Node: Taking Notes With Org Gnosis5468
+Node: Organizing your notes6458
+Node: Importing Notes8342
+Node: Configuration8753
+Node: Completions8942
+Node: Diacritic Insensitive completions9218
+Node: Encryption11115
+Node: Contributing11781
+Node: Sources11964
+Node: Patches Require Copyright Assignment To The FSF12254
 
 End Tag Table
 

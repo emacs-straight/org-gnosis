@@ -1,0 +1,91 @@
+                           ━━━━━━━━━━━━━━━━━
+                            ORG GNOSIS NEWS
+                           ━━━━━━━━━━━━━━━━━
+
+
+This document contains the release notes that are included in each
+tagged commit on the project's main git repository:
+<https://git.thanosapollo.org/org-gnosis>.
+
+
+0.1.1
+═════
+
+  ⁃ Minor bug fixes
+
+
+0.1.0
+═════
+
+  ⁃ Refactor algorithm for parsing buffer data.
+    ⁃ Improves implementation with new version org-gnosis-ui.
+    ⁃ Fix minor edge case scenarios.
+  ⁃ Update database to version 2.
+
+
+0.0.9
+═════
+
+  ⁃ Add support for inserting journal entries as links with custom
+    description.
+
+
+0.0.8
+═════
+
+  New Features:
+  ⁃ When org-gnosis-insert is called with a prefix arg, prompt for
+    custom link description
+
+  Fixes:
+  ⁃ Use proper quoting for string literals, see [1][2]
+    ⁃ This resolves previous issues for BSD systems
+  [1]
+  <https://www.sqlite.org/quirks.html#double_quoted_string_literals_are_accepted>
+  [2]
+  <https://github.com/magit/emacsql/issues/128#issuecomment-2682104151>
+
+
+0.0.7
+═════
+
+  ⁃ Fix insertion of tags for file topic
+  ⁃ Add org-gnosis-visit-backlinks.
+
+
+0.0.6
+═════
+
+  Minor update with bug fixes & documentation improvements:
+  ⁃ Fixes insertion of tags issues
+    ⁃ Tags are now inserted at the nearest heading with an ID, or as
+      filetags if none found.
+  ⁃ Update FSF assignment form in docs
+
+
+0.0.5
+═════
+
+  Minor update with documentation changes
+  ⁃ Fix typos
+  ⁃ Clearer examples & terminology
+  ⁃ Fix formatting for GNU ELPA
+
+
+0.0.4
+═════
+
+  Minor update with the following changes:
+  ⁃ Adds documentation.
+  ⁃ Adds Makefile & manifest.scm
+  ⁃ Updates the formatting of NEWS file
+
+
+0.0.3
+═════
+
+  Minor Update that adds the following features:
+  ⁃ gpg encryption support.
+  ⁃ Inserting tags for headings, with completions of tags found in the
+    db.
+  ⁃ Minor improvements in error messages & error handling.
