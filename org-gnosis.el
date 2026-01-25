@@ -448,7 +448,9 @@ EXTRAS: The template to be inserted at the start."
   (let* ((file (expand-file-name
 		(org-gnosis--create-name title)
 		(or directory org-gnosis-dir)))
-	 (buffer (find-file-noselect file)))
+	 (buffer (find-file-noselect file))
+	 ;; `org-id-track-globally' can cause unexpected issues.
+	 (org-id-track-globally nil))
     (with-current-buffer buffer
       (unless (or (file-exists-p file)
 		  (> (buffer-size) 0))
@@ -542,12 +544,12 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
          (node (org-gnosis--find "Select gnosis node: "
                                  (org-gnosis-select '[title tags] table)
                                  (org-gnosis-select 'title table)))
-         (id-result (org-gnosis-select 'id table `(= ,node title) t))
-         (id (and id-result (car id-result)))
+         (id (car (org-gnosis-select 'id table `(= ,node title) t)))
+	 (title (car (last (split-string node ":"))))
          (desc (cond ((use-region-p)
                       (buffer-substring-no-properties (region-beginning) (region-end)))
                      (arg (read-string "Description: "))
-                     (t node))))
+                     (t title))))
     (unless id
       (save-window-excursion
         (org-gnosis--create-file node (if journal-p org-gnosis-journal-dir org-gnosis-dir))
