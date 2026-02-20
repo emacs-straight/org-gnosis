@@ -24,10 +24,28 @@
 
 ;;; Commentary:
 
-;; Org Gnosis is a knowledge management tool that leverages Org mode
-;; for storing notes & journal entries, integrating them with an
-;; SQLite database for efficient retrieval and relationship mapping.
-
+;; Org-gnosis is a Zettelkasten-style knowledge management system for
+;; Emacs, part of the Gnosis ecosystem.  It provides efficient
+;; note-taking and journaling with SQLite-backed storage.  Org Gnosis
+;; notes can be linked to Gnosis themata for additional features.
+;;
+;; Features:
+;; - Zettelkasten-style linked notes with unique IDs
+;; - Daily journaling with customizable templates
+;; - Tag-based organization and retrieval
+;; - Backlinks tracking and navigation
+;; - TODO integration for journal entries
+;; - SQLite database for fast searching
+;; - Support for hierarchical note structures
+;; - Encrypted file support (.gpg)
+;;
+;; Main Commands:
+;; - `org-gnosis-find': Find or create a note
+;; - `org-gnosis-insert': Insert a link to a note
+;; - `org-gnosis-journal': Create/visit today's journal entry
+;; - `org-gnosis-find-by-tag': Find notes by tag
+;; - `org-gnosis-visit-backlinks': See all notes linking to current note
+;;
 ;;; Code:
 
 (require 'cl-lib)
@@ -68,7 +86,11 @@
   :type 'string)
 
 (defcustom org-gnosis-create-as-gpg nil
-  "When non-nil, create notes with a .gpg suffix."
+  "When non-nil, create all files with a .gpg suffix."
+  :type 'boolean)
+
+(defcustom org-gnosis-journal-as-gpg nil
+  "When non-nil, create journal entries with a .gpg suffix."
   :type 'boolean)
 
 (defcustom org-gnosis-todo-files org-agenda-files
@@ -428,15 +450,19 @@ Delete file contents in database & file."
 		title)))
           lst))
 
-(defun org-gnosis--create-name (title &optional timestring)
+(defun org-gnosis--create-name (title &optional timestring gpg-p)
   "Create filename for TITLE.
 
-TIMESTRING defaults to `org-gnosis-timestring'"
+TIMESTRING defaults to `org-gnosis-timestring'
+GPG-P: when non-nil, add .gpg suffix (overrides `org-gnosis-create-as-gpg')."
   (let ((timestring (or timestring org-gnosis-timestring))
 	(filename (replace-regexp-in-string "#" ""
-					    (replace-regexp-in-string " " "_" title))))
+					    (replace-regexp-in-string " " "_" title)))
+	(use-gpg (if (eq gpg-p 'default)
+		     org-gnosis-create-as-gpg
+		   (or gpg-p org-gnosis-create-as-gpg))))
     (format "%s--%s.org%s" (format-time-string timestring) filename
-	    (if org-gnosis-create-as-gpg ".gpg" ""))))
+	    (if use-gpg ".gpg" ""))))
 
 (defun org-gnosis--create-file (title &optional directory extras)
   "Create a node FILE for TITLE.
@@ -446,7 +472,10 @@ Insert initial Org metadata if the buffer is new or empty.
 DIRECTORY: Directory where the file is created.
 EXTRAS: The template to be inserted at the start."
   (let* ((file (expand-file-name
-		(org-gnosis--create-name title)
+		(org-gnosis--create-name
+		 title nil
+		 (and (eq directory org-gnosis-journal-dir)
+		      org-gnosis-journal-as-gpg))
 		(or directory org-gnosis-dir)))
 	 (buffer (find-file-noselect file))
 	 ;; `org-id-track-globally' can cause unexpected issues.
@@ -826,11 +855,27 @@ ELEMENT should be the output of `org-element-parse-buffer'."
 			   (not (file-directory-p file))))
 			(directory-files org-gnosis-journal-dir t nil t))
 	   do (org-gnosis-update-file file)))
-;; TODO: Rebuil the database upon sync.
+
 ;;;###autoload
 (defun org-gnosis-db-sync ()
-  "Sync `org-gnosis-db'."
+  "Sync `org-gnosis-db'.
+
+Drop all current tables and recreate the database."
   (interactive)
+  (emacsql-with-transaction org-gnosis-db
+    ;; Drop all existing tables
+    (org-gnosis-db-delete-tables)
+    ;; Recreate tables with current schema
+    (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
+      (emacsql org-gnosis-db [:create-table $i1 $S2] table schema))
+    ;; Sync all files to repopulate
+    (org-gnosis-db-update-files)
+    ;; Set current version
+    (emacsql org-gnosis-db
+	     `[:pragma (= user-version ,org-gnosis-db-version)])))
+
+(defun org-gnosis-db-update-files ()
+  "Sync `org-gnosis-db'."
   (org-gnosis-db-init-if-needed)
   (let ((files (cl-remove-if-not
 		(lambda (file)
@@ -851,16 +896,7 @@ ELEMENT should be the output of `org-element-parse-buffer'."
 		 "Database version %d is outdated (current: %d).  Rebuild database from files? "
 		 current-version org-gnosis-db-version)))
       (message "Rebuilding org-gnosis database...")
-      (emacsql-with-transaction org-gnosis-db
-        ;; Drop all existing tables
-        (org-gnosis-db-delete-tables)
-        ;; Recreate tables with current schema
-        (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
-          (emacsql org-gnosis-db [:create-table $i1 $S2] table schema))
-        ;; Sync all files to repopulate
-	(org-gnosis-db-sync)
-        ;; Set current version
-	(emacsql org-gnosis-db `[:pragma (= user-version ,org-gnosis-db-version)]))
+      (org-gnosis-db-sync)
       (message "Database rebuild completed!"))))
 
 (defun org-gnosis-db-init ()

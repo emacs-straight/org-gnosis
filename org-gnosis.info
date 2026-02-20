@@ -1,4 +1,4 @@
-This is org-gnosis.info, produced by makeinfo version 7.1.1 from
+This is org-gnosis.info, produced by makeinfo version 7.2 from
 org-gnosis.texi.
 
 Copyright (C) 2025 Free Software Foundation, Inc.
@@ -85,7 +85,6 @@ Contributing
 
 * Sources::
 * Patches Require Copyright Assignment To The FSF::
-
 
 
 File: org-gnosis.info,  Node: Installation & Configuration,  Next: Taking Notes With Org Gnosis,  Prev: Top,  Up: Top
@@ -335,7 +334,6 @@ files encrypted, such as setting a default key to encrypt your files.
              ;; Do not prompt for key selection, we are only using the above key.
              epa-file-select-keys 'silent))
 
-
 
 File: org-gnosis.info,  Node: Contributing,  Prev: Configuration,  Up: Top
 
@@ -418,26 +416,25 @@ completed only once, allowing you to contribute to GNU Emacs.
      [Which files have you changed so far, and which new files have you written
      so far?]
 
-
-
 
 Tag Table:
-Node: Top852
-Node: Installation & Configuration2903
-Node: Taking Notes With Org Gnosis5468
-Node: Organizing your notes6458
-Node: Importing Notes8342
-Node: Configuration8753
-Node: Completions8942
-Node: Diacritic Insensitive completions9218
-Node: Encryption11115
-Node: Contributing11781
-Node: Sources11964
-Node: Patches Require Copyright Assignment To The FSF12254
+Node: Top850
+Node: Installation & Configuration2900
+Node: Taking Notes With Org Gnosis5465
+Node: Organizing your notes6455
+Node: Importing Notes8339
+Node: Configuration8750
+Node: Completions8939
+Node: Diacritic Insensitive completions9215
+Node: Encryption11112
+Node: Contributing11777
+Node: Sources11960
+Node: Patches Require Copyright Assignment To The FSF12250
 
 End Tag Table
 
 
 Local Variables:
 coding: utf-8
+Info-documentlanguage: en
 End:
