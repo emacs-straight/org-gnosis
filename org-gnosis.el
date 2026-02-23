@@ -1,11 +1,11 @@
-;;; org-gnosis.el --- Roam-like Knowledge Management System  -*- lexical-binding: t; -*-
+;;; org-gnosis.el --- Learning-focused note-taking for Gnosis  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024-2026  Free Software Foundation, Inc.
 
 ;; Author: Thanos Apollo <public@thanosapollo.org>
-;; Keywords: extensions
+;; Keywords: outlines, extensions, org-mode
 ;; URL: https://thanosapollo.org/projects/org-gnosis/
-;; Version: 0.1.2
+;; Version: 0.2.0
 
 ;; Package-Requires: ((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2"))
 
@@ -24,27 +24,35 @@
 
 ;;; Commentary:
 
-;; Org-gnosis is a Zettelkasten-style knowledge management system for
-;; Emacs, part of the Gnosis ecosystem.  It provides efficient
-;; note-taking and journaling with SQLite-backed storage.  Org Gnosis
-;; notes can be linked to Gnosis themata for additional features.
+;; Org-gnosis provides a minimal note-taking system with linked notes.
+;; It functions as an independent module, designed to integrate with
+;; Gnosis (a spaced repetition system) but usable standalone.
+;;
+;; The package implements Zettelkasten-style note-taking: notes have
+;; unique IDs, link to other notes, and the system tracks backlinks.
+;; Notes are stored as org files and indexed in an SQLite database.
+;;
+;; When used with Gnosis, notes can link to themata (question subjects),
+;; connecting note-taking with spaced repetition.  Without Gnosis, it
+;; provides a lightweight system for linked notes and journaling.
 ;;
 ;; Features:
-;; - Zettelkasten-style linked notes with unique IDs
-;; - Daily journaling with customizable templates
-;; - Tag-based organization and retrieval
-;; - Backlinks tracking and navigation
-;; - TODO integration for journal entries
-;; - SQLite database for fast searching
-;; - Support for hierarchical note structures
-;; - Encrypted file support (.gpg)
+;; - Unique IDs for each note
+;; - Backlinks and forward link tracking
+;; - Tag-based organization
+;; - Daily journaling (single file or separate files per day)
+;; - SQLite database for indexing
+;; - Hierarchical note structures
+;; - Optional .gpg encryption
+;; - Optional integration with Gnosis themata
 ;;
-;; Main Commands:
+;; Main interactive commands:
 ;; - `org-gnosis-find': Find or create a note
 ;; - `org-gnosis-insert': Insert a link to a note
-;; - `org-gnosis-journal': Create/visit today's journal entry
+;; - `org-gnosis-journal': Open today's journal entry
 ;; - `org-gnosis-find-by-tag': Find notes by tag
-;; - `org-gnosis-visit-backlinks': See all notes linking to current note
+;; - `org-gnosis-visit-backlinks': Visit notes linking to current note
+;; - `org-gnosis-db-sync': Sync database with files
 ;;
 ;;; Code:
 
@@ -61,7 +69,7 @@
   :type 'directory)
 
 (defcustom org-gnosis-journal-templates
-  '(("Default" (lambda () (format "* Daily Notes\n\n* Goals\n%s" (org-gnosis-todos))))
+  '(("Default" (lambda () (format "** Daily Notes\n\n** Goals\n%s" (org-gnosis-todos))))
     ("Empty" (lambda () "")))
   "Templates for journaling."
   :type '(repeat (cons (string :tag "Name")
@@ -76,6 +84,11 @@
 (defcustom org-gnosis-journal-dir (expand-file-name "journal" org-gnosis-dir)
   "Gnosis journal directory."
   :type 'directory)
+
+;; Create notes & journal directories.
+(dolist (dir `(,org-gnosis-dir ,org-gnosis-journal-dir))
+  (unless (file-directory-p dir)
+    (make-directory dir)))
 
 (defcustom org-gnosis-show-tags nil
   "Display tags with `org-gnosis-find'."
@@ -116,23 +129,51 @@ compatability with `org-todo-keywords'."
   '((t :inherit font-lock-type-face))
   "Face for displaying gnosis with `org-gnosis-find'.")
 
-(defvar org-gnosis-db (emacsql-sqlite-open (locate-user-emacs-file "org-gnosis.db")))
+(defcustom org-gnosis-database-file (locate-user-emacs-file "org-gnosis.db")
+  "Path to database file."
+  :type 'file
+  :group 'org-gnosis)
 
-;; Create notes & journal directories.
-(dolist (dir `(,org-gnosis-dir ,org-gnosis-journal-dir))
-  (unless (file-directory-p dir)
-    (make-directory dir)))
+(defcustom org-gnosis-journal-file (expand-file-name "jounral.org" org-gnosis-journal-dir)
+  "When non-nil, use this file for journal entries as level 1 headings.
 
-(defun org-gnosis--find-master-id (id-stack level topic-id)
-  "Find the appropriate master ID for a headline at LEVEL.
-ID-STACK contains parent IDs, LEVEL is current headline level,
-TOPIC-ID is fallback."
-  (if (= level 1)
-      topic-id
-    (or (cl-loop for i from (- level 2) downto 0
-                 for parent-id = (nth i id-stack)
-                 when parent-id return parent-id)
-        topic-id)))
+If nil, journal entries are created as separate files in
+`org-gnosis-journal-dir'."
+  :type '(choice (const :tag "Use separate files" nil)
+                 (file :tag "Single journal file")))
+
+(defun org-gnosis-journal--create-file ()
+  "Create `org-gnosis-journal' when non-nil and file it does not exists."
+  (when (and org-gnosis-journal-file
+	     (not (file-exists-p org-gnosis-journal-file)))
+    (with-current-buffer (find-file-noselect org-gnosis-journal-file)
+      (insert (format "#+title: %s Journal \n#+filetags: \n" (or user-full-name "")))
+      (org-gnosis-mode)
+      (save-buffer)
+      (message "Created journal file."))))
+
+(defun org-gnosis-journal--add-entry (title)
+  "Add entry for TITLE to `org-gnosis-journal-file'."
+  (when org-gnosis-journal-file
+    (org-gnosis-journal--create-file)
+    (find-file org-gnosis-journal-file)
+    (goto-char (point-max))
+    (insert (format "* %s\n" title))
+    (org-id-get-create)
+    (insert (org-gnosis-select-template org-gnosis-journal-templates))))
+
+(defvar org-gnosis-db--connection nil)
+
+(defun org-gnosis-db-get ()
+  "Get or create the database connection."
+  (unless (and org-gnosis-db--connection
+               (emacsql-live-p org-gnosis-db--connection)
+	       (file-exists-p org-gnosis-database-file))
+    (setq org-gnosis-db--connection
+          (emacsql-sqlite-open org-gnosis-database-file)))
+  org-gnosis-db--connection)
+
+
 
 (defun org-gnosis--combine-tags (inherited-tags headline-tags)
   "Combine INHERITED-TAGS and HEADLINE-TAGS, removing duplicates."
@@ -146,71 +187,29 @@ Optional argument FLATTEN, when non-nil, flattens the result."
   ;; Check for database upgrades
   (let* ((restrictions (or restrictions '(= 1 1)))
 	 (flatten (or flatten nil))
-	 (output (emacsql org-gnosis-db
+	 (output (emacsql (org-gnosis-db-get)
 			  `[:select ,value :from ,table :where ,restrictions])))
     (if flatten (apply #'append output) output)))
 
 (defun org-gnosis--insert-into (table values)
   "Insert VALUES to TABLE."
-  (emacsql org-gnosis-db `[:insert :into ,table :values ,values]))
+  (emacsql (org-gnosis-db-get) `[:insert :into ,table :values ,values]))
 
 (defun org-gnosis--delete (table value)
   "From TABLE use where to delete VALUE."
-  (emacsql org-gnosis-db `[:delete :from ,table :where ,value]))
+  (emacsql (org-gnosis-db-get) `[:delete :from ,table :where ,value]))
 
 (defun org-gnosis--drop-table (table)
   "Drop TABLE from `gnosis-db'."
-  (emacsql org-gnosis-db `[:drop-table ,table]))
+  (emacsql (org-gnosis-db-get) `[:drop-table ,table]))
 
-(defun org-gnosis-adjust-title (input &optional node-id)
-  "Adjust the INPUT string to replace id link structures with plain text.
-
-If node title contains an id link, it's inserted as link for NODE-ID
-in the database."
-  (cl-assert (and (stringp input) (not (string-empty-p input))) nil
-	     "Input must be a non-empty string, got: %S")
-  (let* ((id-links '())
-	 (new-input (replace-regexp-in-string
-                     "\\[\\[id:[^]]+\\]\\[\\(.*?\\)\\]\\]"
-                     (lambda (match)
-                       (let ((link-text (match-string 1 match)))
-                         (when (and link-text (not (string-empty-p link-text)))
-                           (push link-text id-links))
-                         link-text))
-                     input)))
-    ;; Only insert links if we have a valid node-id and found links
-    (when (and node-id id-links (not (string-empty-p node-id)))
-      (condition-case err
-          (emacsql-with-transaction org-gnosis-db
-            (cl-loop for link in (reverse id-links)
-                     do (org-gnosis--insert-into 'links `([,node-id ,link]))))
-        (error "Warning: Failed to insert title links for %s: %S" node-id err)))
-    new-input))
-
-(defun org-gnosis-parse-headline (headline inherited-tags master-id title-stack)
-  "Parse a HEADLINE and return a plist with its info.
-
-INHERITED-TAGS: Upper level headline tags.
-MASTER-ID: ID of the parent headline or topic.
-TITLE-STACK: List of parent titles for building hierarchical title.
-
-Note: This function assumes the headline has already been validated
-to have an ID."
-  (let* ((title (org-element-property :raw-value headline))
-         (id (org-element-property :ID headline))
-         (level (org-element-property :level headline))
-         (headline-tags (org-element-property :tags headline))
-         (all-tags (org-gnosis--combine-tags inherited-tags headline-tags))
-         (full-title (if title-stack
-                         (concat (mapconcat #'identity title-stack ":")
-                                 ":"
-                                 (string-trim title))
-                       (string-trim title))))
-    (list :title full-title
-          :id id
-          :tags all-tags
-          :master master-id
-          :level level)))
+(defun org-gnosis-adjust-title (input)
+  "Strip org link markup from INPUT, keeping only link descriptions.
+Converts [[id:xxx][Description]] to Description."
+  (replace-regexp-in-string
+   "\\[\\[id:[^]]+\\]\\[\\(.*?\\)\\]\\]"
+   "\\1"
+   input))
 
 (defun org-gnosis-get-id ()
   "Return id for heading at point."
@@ -243,27 +242,31 @@ to have an ID."
 
 (defun org-gnosis-get-data--topic (&optional parsed-data)
   "Retrieve the title and ID from the current org buffer or given PARSED-DATA.
-Returns (title tags id) or signals error if required data is missing."
+Returns (title tags id). ID will be nil if no file-level ID exists."
   (unless parsed-data
     (setq parsed-data (org-element-parse-buffer)))
   (let* ((id (org-element-map parsed-data 'property-drawer
                (lambda (drawer)
-                 (org-element-map (org-element-contents drawer) 'node-property
-                   (lambda (prop)
-                     (when (string= (org-element-property :key prop) "ID")
-                       (org-element-property :value prop)))
-                   nil t))
+                 ;; Only consider file-level property drawer (before first headline)
+                 (let ((parent (org-element-property :parent drawer)))
+                   (when (and parent
+                              (eq (org-element-type parent) 'section)
+                              (let ((section-parent (org-element-property :parent parent)))
+                                (eq (org-element-type section-parent) 'org-data)))
+                     (org-element-map (org-element-contents drawer) 'node-property
+                       (lambda (prop)
+                         (when (string= (org-element-property :key prop) "ID")
+                           (org-element-property :value prop)))
+                       nil t))))
                nil t))
 	 (title-raw (org-element-map parsed-data 'keyword
                       (lambda (kw)
                         (when (string= (org-element-property :key kw) "TITLE")
                           (org-element-property :value kw)))
                       nil t))
-	 (title (when title-raw (org-gnosis-adjust-title title-raw id)))
+	 (title (when title-raw (org-gnosis-adjust-title title-raw)))
 	 (tags (org-gnosis-get-filetags parsed-data)))
-    ;; Validate required fields
-    (unless id
-      (error "Org buffer must have an ID property"))
+    ;; Only validate title, ID is optional
     (unless (and title (not (string-empty-p title)))
       (error "Org buffer must have a non-empty TITLE"))
     (list title tags id)))
@@ -279,58 +282,73 @@ Returns (title tags id) or signals error if required data is missing."
     (when (and filetags (not (string-empty-p (string-trim filetags))))
       (remove "" (split-string filetags ":")))))
 
-(defun org-gnosis-parse-topic (parsed-data)
-  "Parse topic information from the PARSED-DATA."
-  (let* ((topic-info (org-gnosis-get-data--topic parsed-data))
-         (topic-title (nth 0 topic-info))
-         (topic-tags (nth 1 topic-info))
-         (topic-id (nth 2 topic-info)))
-    (when topic-id
-      (list :title topic-title
-	    :id topic-id :tags topic-tags :master 0 :level 0))))
+(defun org-gnosis--parse-headlines-recursive (element parent-id parent-title parent-tags)
+  "Recursively parse headlines from ELEMENT.
+ELEMENT can be the parsed-data (org-data) or a headline element.
+PARENT-ID is the ID of nearest ancestor with ID (or 0).
+PARENT-TITLE is the hierarchical title path (only from ancestors with IDs).
+PARENT-TAGS are the inherited tags from ancestors."
+  (let (results)
+    (org-element-map (org-element-contents element) 'headline
+      (lambda (headline)
+        (let* ((current-id (org-element-property :ID headline))
+               (title (org-element-property :raw-value headline))
+               (level (org-element-property :level headline))
+               (headline-tags (org-element-property :tags headline))
+               (combined-tags (org-gnosis--combine-tags parent-tags headline-tags)))
+
+          (if current-id
+              ;; This headline has an ID - process it
+              (let* ((clean-title (org-gnosis-adjust-title (string-trim title)))
+                     (full-title (if parent-title
+                                     (concat parent-title ":" clean-title)
+                                   clean-title))
+                     (entry (list :id current-id
+                                  :title full-title
+                                  :tags combined-tags
+                                  :master (or parent-id 0)
+                                  :level level))
+                     ;; Recursively process children with THIS as parent
+                     (children (org-gnosis--parse-headlines-recursive
+				headline
+				current-id
+				full-title
+				combined-tags)))
+                (setq results (append results (cons entry children))))
+
+            ;; No ID - skip this headline but process children
+            ;; Children inherit from the same parent context
+            (let ((children (org-gnosis--parse-headlines-recursive
+                             headline
+                             parent-id
+                             parent-title
+                             combined-tags)))
+              (setq results (append results children))))))
+      nil nil 'headline)
+    results))
 
 (defun org-gnosis-buffer-data (&optional data)
   "Parse DATA in current buffer for topics & headlines with their ID, tags, links."
   (let* ((parsed-data (or data (org-element-parse-buffer)))
-         (topic (org-gnosis-parse-topic parsed-data)))
-    (unless topic (error "Buffer must have a topic with ID"))
-    (let ((headlines '())
-          (tag-stack (list (plist-get topic :tags)))
-          (id-stack (list (plist-get topic :id)))
-          (title-stack '())
-          (topic-id (plist-get topic :id))
-          (topic-title (plist-get topic :title)))
-      (org-element-map parsed-data 'headline
-        (lambda (headline)
-          (let* ((level (org-element-property :level headline))
-                 (headline-tags (org-element-property :tags headline))
-                 (current-id (org-element-property :ID headline))
-                 (current-title (org-element-property :raw-value headline)))
-            ;; Adjust stacks to proper level
-            (while (>= (length id-stack) level)
-              (pop id-stack))
-            (while (>= (length tag-stack) level)
-              (pop tag-stack))
-            (while (>= (length title-stack) level)
-              (pop title-stack))
-            ;; Calculate combined tags
-            (let* ((inherited-tags (or (car tag-stack) '()))
-                   (combined-tags (org-gnosis--combine-tags inherited-tags headline-tags))
-                   ;; Build parent titles: topic title + title stack
-                   (parent-titles (cons topic-title (reverse title-stack))))
-              ;; Calculate master ID from current stack state
-              (let ((master-id (when current-id
-                                (org-gnosis--find-master-id id-stack level topic-id))))
-                ;; Push current values to stacks for children
-                (push current-id id-stack)
-                (push combined-tags tag-stack)
-                (push (string-trim current-title) title-stack)
-                ;; Only parse headlines with IDs
-                (when current-id
-                  (when-let* ((parsed (org-gnosis-parse-headline headline combined-tags master-id
-                                                                  parent-titles)))
-                    (push parsed headlines))))))))
-      (nreverse (cons topic headlines)))))
+         (topic-info (org-gnosis-get-data--topic parsed-data))
+         (topic-title (nth 0 topic-info))
+         (topic-tags (nth 1 topic-info))
+         (topic-id (nth 2 topic-info))
+         ;; Recursively parse all headlines
+         (headlines (org-gnosis--parse-headlines-recursive
+                     parsed-data
+                     topic-id
+                     (when topic-id topic-title)
+                     topic-tags)))
+    ;; Only include topic if it has an ID
+    (if topic-id
+        (cons (list :title topic-title
+                    :id topic-id
+                    :tags topic-tags
+                    :master 0
+                    :level 0)
+              headlines)
+      headlines)))
 
 (defun org-gnosis-get-file-info (filename)
   "Get data for FILENAME.
@@ -354,27 +372,22 @@ If JOURNAL is non-nil, update file as a journal entry."
 	     (data (butlast info))
 	     (table (if journal 'journal 'nodes))
 	     (filename (file-name-nondirectory file))
-	     (links (and (> (length info) 1) (apply #'append (last info))))
-	     (titles (org-gnosis-select 'title table nil t)))
+	     (full-path (expand-file-name file (if journal org-gnosis-journal-dir org-gnosis-dir)))
+	     (mtime (format-time-string "%s" (file-attribute-modification-time (file-attributes full-path))))
+	     (hash (org-gnosis--file-hash full-path))
+	     (links (and (> (length info) 1) (apply #'append (last info)))))
 	;; Add gnosis topic and nodes
 	(message "Parsing: %s" filename)
-	(emacsql-with-transaction org-gnosis-db
+	(emacsql-with-transaction (org-gnosis-db-get)
 	  (cl-loop for item in data
-		   do (let ((title (org-gnosis-adjust-title
-				    (plist-get item :title)))
+		   when (plist-get item :id)
+		   do (let ((title (plist-get item :title))
 			    (id (plist-get item :id))
 			    (master (plist-get item :master))
 			    (tags (plist-get item :tags))
 			    (level (plist-get item :level)))
-			;; Handle duplicate titles gracefully
-			(when (member title titles)
-			  (let ((counter 1))
-			    (while (member (format "%s (%d)" title counter) titles)
-			      (setq counter (1+ counter)))
-			    (setq title (format "%s (%d)" title counter))
-			    (message "Duplicate title found, renamed to: %s" title)))
 			(org-gnosis--insert-into table `([,id ,filename ,title ,level
-							      ,(prin1-to-string tags)]))
+							      ,(prin1-to-string tags) ,mtime ,hash]))
 			;; Insert tags
 			(cl-loop for tag in tags
 				 do
@@ -395,11 +408,21 @@ If JOURNAL is non-nil, update file as a journal entry."
 	 (nodes (if journal-p
 		    (org-gnosis-select 'id 'journal `(= file ,file) t)
 		  (org-gnosis-select 'id 'nodes `(= file ,file) t))))
-    (emacsql-with-transaction org-gnosis-db
+    (emacsql-with-transaction (org-gnosis-db-get)
       (cl-loop for node in nodes
 	       do (if journal-p
 		      (org-gnosis--delete 'journal `(= id ,node))
 		    (org-gnosis--delete 'nodes `(= id ,node)))))))
+
+(defun org-gnosis-tags--cleanup-orphaned ()
+  "Remove orphaned tags that have no associated nodes.
+Efficient: only checks tags not in node-tag table."
+  (let* ((all-tags (org-gnosis-select 'tag 'tags nil t))
+         (used-tags (org-gnosis-select 'tag 'node-tag nil t))
+         (orphaned (cl-set-difference all-tags used-tags :test #'equal)))
+    (when orphaned
+      (dolist (tag orphaned)
+        (emacsql (org-gnosis-db-get) [:delete :from tags :where (= tag $s1)] tag)))))
 
 (defun org-gnosis-update-file (&optional file)
   "Update contents of FILE in database.
@@ -413,9 +436,26 @@ Removes all contents of FILE in database, adding them anew."
     (org-gnosis--update-file file journal-p)
     ;; Update todos
     (when (and journal-p file)
-      (let ((done-todos (org-gnosis-get-checked-items (org-element-parse-buffer))))
+      (let* ((today (format-time-string "%Y-%m-%d"))
+             (parsed-buffer (org-element-parse-buffer))
+             (done-todos (if (and org-gnosis-journal-file
+                                  (string= file (file-name-nondirectory org-gnosis-journal-file)))
+                             ;; For single journal file, only get items from today's heading
+                             (let ((today-heading
+                                    (org-element-map parsed-buffer 'headline
+                                      (lambda (headline)
+                                        (when (string= (org-element-property :raw-value headline) today)
+                                          headline))
+                                      nil t)))
+                               (if today-heading
+                                   (org-gnosis-get-checked-items today-heading)
+                                 nil))
+                           ;; For separate journal files, get all items
+                           (org-gnosis-get-checked-items parsed-buffer))))
         (cl-loop for done-todo in done-todos
-		 do (org-gnosis-mark-todo-as-done done-todo))))))
+		 do (org-gnosis-mark-todo-as-done done-todo))))
+    ;; Cleanup orphaned tags
+    (org-gnosis-tags--cleanup-orphaned)))
 
 ;;;###autoload
 (defun org-gnosis-delete-file (&optional file)
@@ -536,6 +576,11 @@ DIRECTORY."
 	      "File %s does not exist.  Try running `org-gnosis-db-sync' to resolve this"
 	      file)))))
 
+(defun org-gnosis--nodes-by-tag (tag)
+  "Return all nodes associated with TAG.
+Returns a list of (ID) pairs for nodes that have TAG."
+  (org-gnosis-select 'id 'nodes `(like tags ',(format "%%\\\"%s\\\"%%" tag)) t))
+
 ;;;###autoload
 (defun org-gnosis-find-by-tag (&optional tag)
   "Find node under TAG."
@@ -543,11 +588,9 @@ DIRECTORY."
   (let* ((tag (or tag (funcall org-gnosis-completing-read-func
 			       "Select tag: "
 			       (org-gnosis-select 'tag 'tags nil t))))
-	 (node
-	  (funcall org-gnosis-completing-read-func
-		   "Select node: "
-		   (org-gnosis-select 'title 'nodes
-				      `(like tags ',(format "%%\"%s\"%%" tag)) t))))
+	 (nodes-ids (org-gnosis--nodes-by-tag tag))
+	 (node-titles (org-gnosis-select 'title 'nodes `(in id ,(vconcat nodes-ids)) t))
+	 (node (completing-read "Select node: " node-titles nil t)))
     (org-gnosis-find node)))
 
 (defun org-gnosis-select-template (templates)
@@ -634,6 +677,30 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
 	 (completing-read "Backlink: " titles))
       (message "No backlinks found for current node"))))
 
+(defun org-gnosis-get-nodes-data (&optional node-ids)
+  "Fetch node data for NODE-IDS or all nodes if not specified.
+
+Returns a list of (ID TITLE BACKLINK-COUNT) for each node."
+  (let* ((nodes (if node-ids
+                    (org-gnosis-select '[id title] 'nodes
+                                       `(in id ,(vconcat node-ids)))
+                  (org-gnosis-select '[id title] 'nodes)))
+         (backlinks (if node-ids
+                        (org-gnosis-select '[dest source] 'links
+                                           `(in dest ,(vconcat node-ids)))
+                      (org-gnosis-select '[dest source] 'links)))
+         (backlinks-count-hash (let ((hash (make-hash-table :test 'equal)))
+                                 (dolist (link backlinks hash)
+                                   (let ((dest (nth 0 link)))
+                                     (puthash dest
+                                              (1+ (or (gethash dest hash) 0))
+                                              hash))))))
+    (mapcar (lambda (node)
+              (let ((id (nth 0 node))
+                    (title (nth 1 node)))
+                (list id title (or (gethash id backlinks-count-hash) 0))))
+            nodes)))
+
 ;;;###autoload
 (defun org-gnosis-journal-find (&optional title)
   "Find journal entry for TITLE."
@@ -644,12 +711,16 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
 			   (org-gnosis-select 'title 'journal))))
 	 (id (car (org-gnosis-select 'id 'journal `(= title ,title) t)))
 	 (file (car (org-gnosis-select 'file 'journal `(= title ,title) t))))
-    (if (and id file)
-	(org-gnosis-find
-	 title file id org-gnosis-journal-dir org-gnosis-journal-templates)
+    (cond
+     ((and org-gnosis-journal-file (not id))
+      (org-gnosis-journal--add-entry title))
+     ((and id file)
+      (org-gnosis-find
+       title file id org-gnosis-journal-dir org-gnosis-journal-templates))
+     (t
       (org-gnosis--create-file
        title org-gnosis-journal-dir
-       (org-gnosis-select-template org-gnosis-journal-templates)))))
+       (org-gnosis-select-template org-gnosis-journal-templates))))))
 
 ;;;###autoload
 (defun org-gnosis-journal-insert (arg)
@@ -702,9 +773,9 @@ If file or id are not found, use `org-open-at-point'."
       (org-element-map (org-element-parse-buffer) 'headline
         (lambda (headline)
           (when (member (org-element-property :todo-keyword headline)
-			 (cl-loop for keyword in org-gnosis-todo-keywords
-				  until (and (stringp keyword) (string= keyword "|"))
-				  collect keyword))
+			(cl-loop for keyword in org-gnosis-todo-keywords
+				 until (and (stringp keyword) (string= keyword "|"))
+				 collect keyword))
             (let* ((title (org-element-property :raw-value headline))
                    (timestamp (org-element-property
 			       :raw-value (org-element-property :scheduled headline))))
@@ -759,11 +830,11 @@ ELEMENT should be the output of `org-element-parse-buffer'."
       (lambda (item)
         (when (eq (org-element-property :checkbox item) 'on)
           (push (car (split-string
-                     (substring-no-properties
-                      (string-trim
-                       (org-element-interpret-data
-                        (org-element-contents item))))
-                     "\n"))
+                      (substring-no-properties
+                       (string-trim
+			(org-element-interpret-data
+                         (org-element-contents item))))
+                      "\n"))
                 checked-items))))
     (nreverse checked-items)))
 
@@ -808,7 +879,15 @@ ELEMENT should be the output of `org-element-parse-buffer'."
 
 ;; Org-Gnosis Database
 
-(defconst org-gnosis-db-version 2)
+;; Org-Gnosis Database
+
+(defun org-gnosis--file-hash (file)
+  "Compute SHA1 hash of FILE content."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (secure-hash 'sha1 (current-buffer))))
+
+(defconst org-gnosis-db-version 3)
 
 (defconst org-gnosis-db--table-schemata
   '((nodes
@@ -816,7 +895,9 @@ ELEMENT should be the output of `org-element-parse-buffer'."
        (file :not-null)
        (title text :not-null)
        (level text :not-null)
-       tags]))
+       tags
+       mtime
+       hash]))
     (tags
      ([(tag text :primary-key)]
       (:unique [tag])))
@@ -825,7 +906,9 @@ ELEMENT should be the output of `org-element-parse-buffer'."
        (file :not-null)
        (title text :not-null)
        (level text :not-null)
-       tags]))
+       tags
+       mtime
+       hash]))
     (node-tag
      ([(node-id :not-null)
        (tag :not-null)]
@@ -840,79 +923,139 @@ ELEMENT should be the output of `org-element-parse-buffer'."
 (defun org-gnosis-db-delete-tables ()
   "Drop all tables."
   (ignore-errors
-    (emacsql-with-transaction org-gnosis-db
+    (emacsql-with-transaction (org-gnosis-db-get)
       ;; Maybe use sql for version upgrades that change schemata?
       (dolist (table (mapcar #'car org-gnosis-db--table-schemata))
 	(org-gnosis--drop-table table)))))
 
-(defun org-gnosis-db-sync--journal ()
-  "Sync journal entries in databse."
-  (cl-loop for file in (cl-remove-if-not
-			(lambda (file)
-			  (and
-			   (string-match-p "^[0-9]"
-					   (file-name-nondirectory file))
-			   (not (file-directory-p file))))
-			(directory-files org-gnosis-journal-dir t nil t))
-	   do (org-gnosis-update-file file)))
+(defun org-gnosis-db-sync--journal (&optional force)
+  "Sync journal entries in database.
+When FORCE, update all files. Otherwise, only update changed files."
+  (let* ((journal-files (cl-remove-if-not
+                         (lambda (file)
+                           (and (string-match-p "^[0-9]"
+                                                (file-name-nondirectory file))
+                                (not (file-directory-p file))))
+                         (directory-files org-gnosis-journal-dir t nil t)))
+         ;; Add single journal file if it exists
+         (all-files (if (and org-gnosis-journal-file
+                             (file-exists-p org-gnosis-journal-file))
+                        (cons org-gnosis-journal-file journal-files)
+                      journal-files))
+         (files (if force
+                    all-files
+                  (cl-remove-if-not
+                   (lambda (file) (org-gnosis--file-changed-p file 'journal))
+                   all-files))))
+    (when (> (length files) 0)
+      (let ((progress (make-progress-reporter
+                       (format "Processing %d/%d journal files..." (length files) (length all-files))
+                       0 (length files))))
+        (cl-loop for file in files
+                 for i from 0
+                 do (progn
+                      (org-gnosis-update-file file)
+                      (progress-reporter-update progress i)))
+        (progress-reporter-done progress)))))
 
 ;;;###autoload
-(defun org-gnosis-db-sync ()
-  "Sync `org-gnosis-db'.
+(defun org-gnosis-db-sync (&optional force)
+  "Sync `org-gnosis-db' with progress reporting.
 
-Drop all current tables and recreate the database."
-  (interactive)
-  (emacsql-with-transaction org-gnosis-db
-    ;; Drop all existing tables
-    (org-gnosis-db-delete-tables)
-    ;; Recreate tables with current schema
-    (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
-      (emacsql org-gnosis-db [:create-table $i1 $S2] table schema))
-    ;; Sync all files to repopulate
-    (org-gnosis-db-update-files)
-    ;; Set current version
-    (emacsql org-gnosis-db
-	     `[:pragma (= user-version ,org-gnosis-db-version)])))
+When FORCE (prefix arg), rebuild database from scratch."
+  (interactive "P")
+  (let ((gc-cons-threshold most-positive-fixnum)) ; Optimize GC during sync
+    (when force
+      ;; Close connection and delete database file for full rebuild
+      (when (emacsql-live-p org-gnosis-db--connection)
+        (emacsql-close org-gnosis-db--connection)
+        (setq org-gnosis-db--connection nil))
+      (when (file-exists-p org-gnosis-database-file)
+        (delete-file org-gnosis-database-file)))
+    (org-gnosis-db-init-if-needed)
+    (message "Syncing org-gnosis database...")
+    (emacsql-with-transaction (org-gnosis-db-get)
+      (when force
+        ;; Full rebuild: drop and recreate tables
+        (org-gnosis-db-delete-tables)
+        (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
+          (emacsql (org-gnosis-db-get) [:create-table $i1 $S2] table schema)))
+      ;; Sync all files with progress reporting
+      (org-gnosis-db-update-files force)
+      ;; Set current version
+      (emacsql (org-gnosis-db-get)
+               `[:pragma (= user-version ,org-gnosis-db-version)]))
+    (message "Database sync complete!")))
 
-(defun org-gnosis-db-update-files ()
-  "Sync `org-gnosis-db'."
+(defun org-gnosis--file-changed-p (file table)
+  "Check if FILE changed since last sync using mtime then hash.
+TABLE is either 'nodes or 'journal."
+  (let* ((filename (file-name-nondirectory file))
+         (file-mtime (format-time-string "%s" (file-attribute-modification-time (file-attributes file))))
+         (db-data (car (org-gnosis-select '[mtime hash] table `(= file ,filename))))
+         (db-mtime (car db-data))
+         (db-hash (cadr db-data)))
+    (or (not db-mtime) ; New file
+        (and (not (string= file-mtime db-mtime)) ; Mtime changed
+             (not (string= (org-gnosis--file-hash file) db-hash))))))  ; AND hash changed
+
+(defun org-gnosis-db-update-files (&optional force)
+  "Sync `org-gnosis-db' files with progress reporting.
+When FORCE, update all files. Otherwise, only update changed files."
   (org-gnosis-db-init-if-needed)
-  (let ((files (cl-remove-if-not
-		(lambda (file)
-		  (and (string-match-p "^[0-9]"
-				       (file-name-nondirectory file))
-		       (not (file-directory-p file))))
-		(directory-files org-gnosis-dir t nil t))))
-    (cl-loop for file in files
-	     do (org-gnosis-update-file file)))
-  (org-gnosis-db-sync--journal))
+  (let* ((all-files (cl-remove-if-not
+                     (lambda (file)
+                       (and (string-match-p "^[0-9]"
+                                            (file-name-nondirectory file))
+                            (not (file-directory-p file))))
+                     (directory-files org-gnosis-dir t nil t)))
+         (files (if force
+                    all-files
+                  (cl-remove-if-not
+                   (lambda (file) (org-gnosis--file-changed-p file 'nodes))
+                   all-files))))
+    (if (zerop (length files))
+        (message "No files to sync")
+      ;; Process files with progress reporter
+      (let ((progress (make-progress-reporter
+                       (format "Processing %d/%d files..." (length files) (length all-files))
+                       0 (length files))))
+        (cl-loop for file in files
+                 for i from 0
+                 do (progn
+                      (org-gnosis-update-file file)
+                      (progress-reporter-update progress i)))
+        (progress-reporter-done progress))))
+  ;; Sync journal files
+  (message "Syncing journal files...")
+  (org-gnosis-db-sync--journal force)
+  (message "File sync complete"))
 
 (defun org-gnosis-db-rebuild ()
-  "Rebuild database by dropping all tables and syncing from files."
-  (let ((current-version (caar (emacsql org-gnosis-db [:pragma user-version]))))
+  "Rebuild database if version is outdated.
+Checks database version and prompts user for rebuild if needed."
+  (let ((current-version (caar (emacsql (org-gnosis-db-get) [:pragma user-version]))))
     (when (and (< current-version org-gnosis-db-version)
 	       (y-or-n-p
 		(format
 		 "Database version %d is outdated (current: %d).  Rebuild database from files? "
 		 current-version org-gnosis-db-version)))
-      (message "Rebuilding org-gnosis database...")
-      (org-gnosis-db-sync)
-      (message "Database rebuild completed!"))))
+      (org-gnosis-db-sync 'force))))
 
 (defun org-gnosis-db-init ()
   "Initialize database.
 
 Create all tables and set version for new database."
   (message "Creating new org-gnosis database...")
-  (emacsql-with-transaction org-gnosis-db
+  (emacsql-with-transaction (org-gnosis-db-get)
     (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
-      (emacsql org-gnosis-db [:create-table $i1 $S2] table schema))
-    (emacsql org-gnosis-db [:pragma (= user-version org-gnosis-db-version)])))
+      (emacsql (org-gnosis-db-get) [:create-table $i1 $S2] table schema))
+    (emacsql (org-gnosis-db-get) [:pragma (= user-version org-gnosis-db-version)])))
 
 (defun org-gnosis-db-init-if-needed ()
   "Init database if it has not been initialized."
-  (let ((tables (emacsql org-gnosis-db
-			  [:select name :from sqlite-master :where (= type 'table)])))
+  (let ((tables (emacsql (org-gnosis-db-get)
+			 [:select name :from sqlite-master :where (= type 'table)])))
     (when (< (length tables) 3)
       (message "Creating org-gnosis database...")
       (org-gnosis-db-init))))
