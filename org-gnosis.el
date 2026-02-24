@@ -5,7 +5,7 @@
 ;; Author: Thanos Apollo <public@thanosapollo.org>
 ;; Keywords: outlines, extensions, org-mode
 ;; URL: https://thanosapollo.org/projects/org-gnosis/
-;; Version: 0.2.0
+;; Version: 0.2.1
 
 ;; Package-Requires: ((emacs "27.2") (emacsql "4.0.0") (compat "29.1.4.2"))
 
@@ -58,6 +58,9 @@
 
 (require 'cl-lib)
 (require 'emacsql-sqlite)
+;; Pre-load the builtin backend when available (Emacs 29+) to ensure
+;; cl-generic dispatches specialized methods for builtin connections.
+(require 'emacsql-sqlite-builtin nil t)
 (require 'org-element)
 
 (defgroup org-gnosis nil
@@ -85,10 +88,11 @@
   "Gnosis journal directory."
   :type 'directory)
 
-;; Create notes & journal directories.
-(dolist (dir `(,org-gnosis-dir ,org-gnosis-journal-dir))
-  (unless (file-directory-p dir)
-    (make-directory dir)))
+(defun org-gnosis-ensure-directories ()
+  "Create note and journal directories if they do not exist."
+  (dolist (dir (list org-gnosis-dir org-gnosis-journal-dir))
+    (unless (file-directory-p dir)
+      (make-directory dir t))))
 
 (defcustom org-gnosis-show-tags nil
   "Display tags with `org-gnosis-find'."
@@ -134,7 +138,7 @@ compatability with `org-todo-keywords'."
   :type 'file
   :group 'org-gnosis)
 
-(defcustom org-gnosis-journal-file (expand-file-name "jounral.org" org-gnosis-journal-dir)
+(defcustom org-gnosis-journal-file (expand-file-name "journal.org" org-gnosis-journal-dir)
   "When non-nil, use this file for journal entries as level 1 headings.
 
 If nil, journal entries are created as separate files in
@@ -143,11 +147,11 @@ If nil, journal entries are created as separate files in
                  (file :tag "Single journal file")))
 
 (defun org-gnosis-journal--create-file ()
-  "Create `org-gnosis-journal' when non-nil and file it does not exists."
+  "Create `org-gnosis-journal-file' when non-nil and file does not exist."
   (when (and org-gnosis-journal-file
 	     (not (file-exists-p org-gnosis-journal-file)))
     (with-current-buffer (find-file-noselect org-gnosis-journal-file)
-      (insert (format "#+title: %s Journal \n#+filetags: \n" (or user-full-name "")))
+      (insert (format "#+title: %s Journal\n#+filetags: \n" (or user-full-name "")))
       (org-gnosis-mode)
       (save-buffer)
       (message "Created journal file."))))
@@ -172,8 +176,6 @@ If nil, journal entries are created as separate files in
     (setq org-gnosis-db--connection
           (emacsql-sqlite-open org-gnosis-database-file)))
   org-gnosis-db--connection)
-
-
 
 (defun org-gnosis--combine-tags (inherited-tags headline-tags)
   "Combine INHERITED-TAGS and HEADLINE-TAGS, removing duplicates."
@@ -242,7 +244,7 @@ Converts [[id:xxx][Description]] to Description."
 
 (defun org-gnosis-get-data--topic (&optional parsed-data)
   "Retrieve the title and ID from the current org buffer or given PARSED-DATA.
-Returns (title tags id). ID will be nil if no file-level ID exists."
+Returns (title tags id).  ID will be nil if no file-level ID exists."
   (unless parsed-data
     (setq parsed-data (org-element-parse-buffer)))
   (let* ((id (org-element-map parsed-data 'property-drawer
@@ -399,15 +401,21 @@ If JOURNAL is non-nil, update file as a journal entry."
 	  ;; Insert ID links
 	  (cl-loop for link in links
 		   do (org-gnosis--insert-into 'links `[,(cdr link) ,(car link)]))))
-    (error (message "Error updating %s: %s" file err))))
+    (file-error
+     (message "File error updating %s: %s.  Try M-x org-gnosis-db-force-sync to rebuild database."
+              file (error-message-string err)))
+    (error
+     (message "Error updating %s: %s.  Try M-x org-gnosis-db-force-sync if issue persists."
+              file (error-message-string err)))))
 
 (defun org-gnosis--delete-file (&optional file)
   "Delete contents for FILE in database."
   (let* ((file (or file (file-name-nondirectory (buffer-file-name))))
+	 (filename (file-name-nondirectory file))
 	 (journal-p (file-in-directory-p file org-gnosis-journal-dir))
 	 (nodes (if journal-p
-		    (org-gnosis-select 'id 'journal `(= file ,file) t)
-		  (org-gnosis-select 'id 'nodes `(= file ,file) t))))
+		    (org-gnosis-select 'id 'journal `(= file ,filename) t)
+		  (org-gnosis-select 'id 'nodes `(= file ,filename) t))))
     (emacsql-with-transaction (org-gnosis-db-get)
       (cl-loop for node in nodes
 	       do (if journal-p
@@ -415,20 +423,17 @@ If JOURNAL is non-nil, update file as a journal entry."
 		    (org-gnosis--delete 'nodes `(= id ,node)))))))
 
 (defun org-gnosis-tags--cleanup-orphaned ()
-  "Remove orphaned tags that have no associated nodes.
-Efficient: only checks tags not in node-tag table."
-  (let* ((all-tags (org-gnosis-select 'tag 'tags nil t))
-         (used-tags (org-gnosis-select 'tag 'node-tag nil t))
-         (orphaned (cl-set-difference all-tags used-tags :test #'equal)))
-    (when orphaned
-      (dolist (tag orphaned)
-        (emacsql (org-gnosis-db-get) [:delete :from tags :where (= tag $s1)] tag)))))
+  "Remove orphaned tags that have no associated nodes."
+  (emacsql (org-gnosis-db-get)
+           [:delete :from tags
+		    :where (not-in tag [:select :distinct tag :from node-tag])]))
 
 (defun org-gnosis-update-file (&optional file)
   "Update contents of FILE in database.
 
-Removes all contents of FILE in database, adding them anew."
-  (let* ((file (or file (file-name-nondirectory (buffer-file-name))))
+Removes all contents of FILE in database, adding them anew.
+FILE can be a full path or basename."
+  (let* ((file (or file (buffer-file-name)))
 	 (journal-p (file-in-directory-p file org-gnosis-journal-dir)))
     ;; Delete all contents for file
     (org-gnosis--delete-file file)
@@ -437,9 +442,13 @@ Removes all contents of FILE in database, adding them anew."
     ;; Update todos
     (when (and journal-p file)
       (let* ((today (format-time-string "%Y-%m-%d"))
-             (parsed-buffer (org-element-parse-buffer))
+             (parsed-buffer (with-temp-buffer
+                              (insert-file-contents file)
+                              (org-mode)
+                              (org-element-parse-buffer)))
              (done-todos (if (and org-gnosis-journal-file
-                                  (string= file (file-name-nondirectory org-gnosis-journal-file)))
+                                  (string= (file-name-nondirectory file)
+                                           (file-name-nondirectory org-gnosis-journal-file)))
                              ;; For single journal file, only get items from today's heading
                              (let ((today-heading
                                     (org-element-map parsed-buffer 'headline
@@ -564,7 +573,7 @@ DIRECTORY."
 				     "Select gnosis node: "
 				     (org-gnosis-select 'title 'nodes)))))
 	 (file (or file (caar (org-gnosis-select 'file 'nodes `(= title ,title)))))
-	 (id (or id (caar (or id (org-gnosis-select 'id 'nodes `(= title ,title))))))
+	 (id (or id (caar (org-gnosis-select 'id 'nodes `(= title ,title)))))
 	 (directory (or directory org-gnosis-dir))
 	 (templates (or templates org-gnosis-node-templates)))
     (cond ((null file)
@@ -573,7 +582,7 @@ DIRECTORY."
 	  ((file-exists-p (expand-file-name file directory))
 	   (org-gnosis-goto-id id))
 	  (t (error
-	      "File %s does not exist.  Try running `org-gnosis-db-sync' to resolve this"
+	      "File %s does not exist.  Try running `org-gnosis-db-force-sync' to resolve this"
 	      file)))))
 
 (defun org-gnosis--nodes-by-tag (tag)
@@ -616,7 +625,7 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
          (node (org-gnosis--find "Select gnosis node: "
                                  (org-gnosis-select '[title tags] table)
                                  (org-gnosis-select 'title table)))
-         (id (car (org-gnosis-select 'id table `(= ,node title) t)))
+         (id (car (org-gnosis-select 'id table `(= title ,node) t)))
 	 (title (car (last (split-string node ":"))))
          (desc (cond ((use-region-p)
                       (buffer-substring-no-properties (region-beginning) (region-end)))
@@ -626,7 +635,7 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
       (save-window-excursion
         (org-gnosis--create-file node (if journal-p org-gnosis-journal-dir org-gnosis-dir))
         (save-buffer)
-        (setf id (car (org-gnosis-select 'id table `(= ,node title) t)))))
+        (setf id (car (org-gnosis-select 'id table `(= title ,node) t)))))
     (org-insert-link nil (format "id:%s" id) desc)
     (unless id (message "Created new node: %s" node))))
 
@@ -654,7 +663,7 @@ If JOURNAL-P is non-nil, retrieve/create node as a journal entry."
    (list (completing-read-multiple
 	  "Select tags (separated by ,): "
 	  (org-gnosis-select 'tag 'tags nil t))))
-  (let ((id (and (org-gnosis-get-id))))
+  (let ((id (org-gnosis-get-id)))
     (org-id-goto id)
     (if (org-current-level)
 	(org-set-tags tags)
@@ -712,11 +721,12 @@ Returns a list of (ID TITLE BACKLINK-COUNT) for each node."
 	 (id (car (org-gnosis-select 'id 'journal `(= title ,title) t)))
 	 (file (car (org-gnosis-select 'file 'journal `(= title ,title) t))))
     (cond
-     ((and org-gnosis-journal-file (not id))
-      (org-gnosis-journal--add-entry title))
      ((and id file)
       (org-gnosis-find
        title file id org-gnosis-journal-dir org-gnosis-journal-templates))
+     ((and org-gnosis-journal-file
+	   (string= title (format-time-string "%Y-%m-%d")))
+      (org-gnosis-journal--add-entry title))
      (t
       (org-gnosis--create-file
        title org-gnosis-journal-dir
@@ -750,7 +760,8 @@ If called with prefix ARG, use custom link description."
 
 If file or id are not found, use `org-open-at-point'."
   (interactive)
-  (let* ((id (or id (org-gnosis--get-id-at-point))))
+  (let* ((id (or id (org-gnosis--get-id-at-point)))
+	 (org-id-track-globally nil))
     (cond ((org-gnosis-select 'file 'nodes `(= id ,id))
 	   (find-file
 	    (expand-file-name (car (org-gnosis-select 'file 'nodes `(= id ,id) t))
@@ -875,9 +886,7 @@ ELEMENT should be the output of `org-element-parse-buffer'."
   :group 'org-gnosis
   (if org-gnosis-mode
       (add-hook 'after-save-hook #'org-gnosis-update-file nil t) ;; buffer local hook
-    (remove-hook 'after-save-hook #'org-gnosis-update-file)))
-
-;; Org-Gnosis Database
+    (remove-hook 'after-save-hook #'org-gnosis-update-file t)))
 
 ;; Org-Gnosis Database
 
@@ -887,7 +896,7 @@ ELEMENT should be the output of `org-element-parse-buffer'."
     (insert-file-contents file)
     (secure-hash 'sha1 (current-buffer))))
 
-(defconst org-gnosis-db-version 3)
+(defconst org-gnosis-db-version 4)
 
 (defconst org-gnosis-db--table-schemata
   '((nodes
@@ -930,7 +939,7 @@ ELEMENT should be the output of `org-element-parse-buffer'."
 
 (defun org-gnosis-db-sync--journal (&optional force)
   "Sync journal entries in database.
-When FORCE, update all files. Otherwise, only update changed files."
+When FORCE, update all files.  Otherwise, only update changed files."
   (let* ((journal-files (cl-remove-if-not
                          (lambda (file)
                            (and (string-match-p "^[0-9]"
@@ -965,9 +974,11 @@ When FORCE, update all files. Otherwise, only update changed files."
 When FORCE (prefix arg), rebuild database from scratch."
   (interactive "P")
   (let ((gc-cons-threshold most-positive-fixnum)) ; Optimize GC during sync
+    (org-gnosis-ensure-directories)
     (when force
       ;; Close connection and delete database file for full rebuild
-      (when (emacsql-live-p org-gnosis-db--connection)
+      (when (and org-gnosis-db--connection
+                 (emacsql-live-p org-gnosis-db--connection))
         (emacsql-close org-gnosis-db--connection)
         (setq org-gnosis-db--connection nil))
       (when (file-exists-p org-gnosis-database-file)
@@ -975,11 +986,6 @@ When FORCE (prefix arg), rebuild database from scratch."
     (org-gnosis-db-init-if-needed)
     (message "Syncing org-gnosis database...")
     (emacsql-with-transaction (org-gnosis-db-get)
-      (when force
-        ;; Full rebuild: drop and recreate tables
-        (org-gnosis-db-delete-tables)
-        (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
-          (emacsql (org-gnosis-db-get) [:create-table $i1 $S2] table schema)))
       ;; Sync all files with progress reporting
       (org-gnosis-db-update-files force)
       ;; Set current version
@@ -989,7 +995,7 @@ When FORCE (prefix arg), rebuild database from scratch."
 
 (defun org-gnosis--file-changed-p (file table)
   "Check if FILE changed since last sync using mtime then hash.
-TABLE is either 'nodes or 'journal."
+TABLE is either \\='nodes or \\='journal."
   (let* ((filename (file-name-nondirectory file))
          (file-mtime (format-time-string "%s" (file-attribute-modification-time (file-attributes file))))
          (db-data (car (org-gnosis-select '[mtime hash] table `(= file ,filename))))
@@ -1001,7 +1007,7 @@ TABLE is either 'nodes or 'journal."
 
 (defun org-gnosis-db-update-files (&optional force)
   "Sync `org-gnosis-db' files with progress reporting.
-When FORCE, update all files. Otherwise, only update changed files."
+When FORCE, update all files.  Otherwise, only update changed files."
   (org-gnosis-db-init-if-needed)
   (let* ((all-files (cl-remove-if-not
                      (lambda (file)
@@ -1031,6 +1037,15 @@ When FORCE, update all files. Otherwise, only update changed files."
   (org-gnosis-db-sync--journal force)
   (message "File sync complete"))
 
+;;;###autoload
+(defun org-gnosis-db-force-sync ()
+  "Force rebuild database from files.
+Unconditionally rebuilds the entire database by dropping all tables
+and re-syncing all files."
+  (interactive)
+  (when (y-or-n-p "Force rebuild database from files?")
+    (org-gnosis-db-sync 'force)))
+
 (defun org-gnosis-db-rebuild ()
   "Rebuild database if version is outdated.
 Checks database version and prompts user for rebuild if needed."
@@ -1045,12 +1060,15 @@ Checks database version and prompts user for rebuild if needed."
 (defun org-gnosis-db-init ()
   "Initialize database.
 
-Create all tables and set version for new database."
+Create all tables, indexes, and set version for new database."
   (message "Creating new org-gnosis database...")
   (emacsql-with-transaction (org-gnosis-db-get)
     (pcase-dolist (`(,table ,schema) org-gnosis-db--table-schemata)
       (emacsql (org-gnosis-db-get) [:create-table $i1 $S2] table schema))
-    (emacsql (org-gnosis-db-get) [:pragma (= user-version org-gnosis-db-version)])))
+    ;; Indexes on file column for sync performance
+    (emacsql (org-gnosis-db-get) [:create-index :if-not-exists idx-nodes-file :on nodes [file]])
+    (emacsql (org-gnosis-db-get) [:create-index :if-not-exists idx-journal-file :on journal [file]])
+    (emacsql (org-gnosis-db-get) `[:pragma (= user-version ,org-gnosis-db-version)])))
 
 (defun org-gnosis-db-init-if-needed ()
   "Init database if it has not been initialized."

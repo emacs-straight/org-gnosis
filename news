@@ -3,12 +3,78 @@
                            ━━━━━━━━━━━━━━━━━
 
 
-                         2026/02/22 2026/01/26
+                         2026/02/23 2026/02/22
 
 
 This document contains the release notes that are included in each
 tagged commit on the project's main git repository:
 <https://git.thanosapollo.org/org-gnosis>.
+
+
+0.2.1
+═════
+
+Critical Fixes
+──────────────
+
+Database Sync
+╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  ⁃ Fixed `org-gnosis--delete-file' querying with full paths instead of
+    basenames, causing incremental sync to silently fail.
+  ⁃ Fixed `org-gnosis-update-file' to accept full paths and correctly
+    detect journal files.
+  ⁃ Fixed force sync not recreating indexes after dropping tables.
+  ⁃ Removed redundant table rebuild in `org-gnosis-db-sync'.
+
+
+Emacs 29+ Compatibility
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  ⁃ Fixed `wrong-type-argument processp' error on Emacs 29+ by
+    pre-loading `emacsql-sqlite-builtin' to ensure cl-generic dispatches
+    the correct methods for builtin sqlite connections.
+
+
+Other Fixes
+╌╌╌╌╌╌╌╌╌╌╌
+
+  ⁃ Fixed reversed SQL condition in `org-gnosis-insert'.
+  ⁃ Fixed `org-gnosis-mode' not passing `LOCAL' argument to
+    `remove-hook', causing the after-save hook to be removed globally
+    instead of per-buffer.
+  ⁃ Fixed typo in default `org-gnosis-journal-file' path.
+  ⁃ Fixed `tags--cleanup-orphaned' indentation causing incorrect
+    behavior.
+  ⁃ Fixed `org-gnosis-insert-tags' redundant expression.
+  ⁃ Fixed `org-gnosis-find' error message and redundant expression.
+
+
+New Features
+────────────
+
+  ⁃ Added `org-gnosis-db-force-sync' command for unconditional database
+    rebuild.
+    ⁃ Provides clearer alternative to `C-u M-x org-gnosis-db-sync'.
+    ⁃ Prompts for confirmation before dropping tables.
+
+
+Improvements
+────────────
+
+  ⁃ Database version bumped to 4 with indexes on file columns for faster
+    sync lookups.
+  ⁃ Simplified orphaned tags cleanup into a single SQL query.
+  ⁃ Extracted directory creation into `org-gnosis-ensure-directories'.
+  ⁃ Improved error messages to suggest `org-gnosis-db-force-sync'.
+  ⁃ Fixed docstrings and checkdoc warnings.
+
+
+Testing
+───────
+
+  ⁃ Added 29 regression tests covering database init, CRUD, tags, links,
+    sync change detection, file naming, journal, and mode hooks.
 
 
 0.2.0
@@ -74,92 +140,4 @@ Improvements
 ────────────
 
   ⁃ Simplified parsing algorithm for better performance and
-    maintainability.
-  ⁃ Better handling of topic titles - only includes parent headings when
-    they have IDs.
-  ⁃ Added `org-gnosis-get-nodes-data' for retrieving node information
-    with backlink counts.
-  ⁃ Improved test coverage for parsing, title processing, and journal
-    todos.
-
-
-0.1.2
-═════
-
-Important Changes
-─────────────────
-
-  Titles for nodes are now stacked with their parent headings.
-        For example a node file with /"Roman Empire"/ as title and
-        level 1 heading /"Emperors"/, the node title for
-        "Emperors" will be /"Roman Empire:Emperors"/
-
-
-Fixes
-─────
-
-  ⁃ `org-gnosis-insert' when called with a selected region, the region
-    will be used as the link description.
-
-
-0.1.1
-═════
-
-  ⁃ Minor bug fixes
-
-
-0.1.0
-═════
-
-  ⁃ Refactor algorithm for parsing buffer data.
-    ⁃ Improves implementation with new version org-gnosis-ui.
-    ⁃ Fix minor edge case scenarios.
-  ⁃ Update database to version 2.
-
-
-0.0.9
-═════
-
-  ⁃ Add support for inserting journal entries as links with custom
-    description.
-
-
-0.0.8
-═════
-
-  New Features:
-  ⁃ When org-gnosis-insert is called with a prefix arg, prompt for
-    custom link description
-
-  Fixes:
-  ⁃ Use proper quoting for string literals, see [1][2]
-    ⁃ This resolves previous issues for BSD systems
-  [1]
-  <https://www.sqlite.org/quirks.html#double_quoted_string_literals_are_accepted>
-  [2]
-  <https://github.com/magit/emacsql/issues/128#issuecomment-2682104151>
-
-
-0.0.7
-═════
-
-  ⁃ Fix insertion of tags for file topic
-  ⁃ Add org-gnosis-visit-backlinks.
-
-
-0.0.6
-═════
-
-  Minor update with bug fixes & documentation improvements:
-  ⁃ Fixes insertion of tags issues
-    ⁃ Tags are now inserted at the nearest heading with an ID, or as
-      filetags if none found.
-  ⁃ Update FSF assignment form in docs
-
-
-0.0.5
-═════
-
-  Minor update with documentation changes
-  ⁃ Fix typos
   …  …
