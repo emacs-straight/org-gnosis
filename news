@@ -6,9 +6,23 @@
                          2026/02/23 2026/02/22
 
 
-This document contains the release notes that are included in each
-tagged commit on the project's main git repository:
-<https://git.thanosapollo.org/org-gnosis>.
+⁃ [Upstream]
+⁃ [Changelog]
+
+
+[Upstream] <https://git.thanosapollo.org/org-gnosis/>
+
+[Changelog] <https://thanosapollo.org/log/org-gnosis/>
+
+
+0.2.2
+═════
+
+New features
+────────────
+
+  ⁃ Add `org-gnosis--find-file-h', a find-file hook that enables
+    `org-gnosis-mode' when visiting org-gnosis files.
 
 
 0.2.1
@@ -133,11 +147,4 @@ Tag Management
 
   ⁃ Automatic cleanup of orphaned tags (tags with no associated nodes)
     when updating files.
-  ⁃ Improved tag-based node selection with dedicated functions.
-
-
-Improvements
-────────────
-
-  ⁃ Simplified parsing algorithm for better performance and
   …  …
